@@ -49,6 +49,7 @@ type Pattern map[string]interface{}
 // Hemera is the main struct
 type Hemera struct {
 	Conn *nats.Conn
+	Opts Options
 }
 
 type request struct {
@@ -90,10 +91,10 @@ func New(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
-			return Hemera{}, err
+			return Hemera{Opts: opts}, err
 		}
 	}
-	return Hemera{Conn: conn}, nil
+	return Hemera{Conn: conn, Opts: opts}, nil
 }
 
 // Timeout is an Option to set the timeout for a act request
@@ -162,7 +163,7 @@ func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
 	}
 
 	data, _ := json.Marshal(&request)
-	m, err := h.Conn.Request(topic, data, RequestTimeout*time.Millisecond)
+	m, err := h.Conn.Request(topic, data, h.Opts.Timeout*time.Millisecond)
 
 	if err != nil {
 		log.Fatal("Act could not be executed")

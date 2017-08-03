@@ -16,7 +16,7 @@ go get github.com/nats-io/nuid
 // Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
 // Create hemera struct
-hemera := server.Hemera{Conn: nc}
+hemera, _ := server.New(nc)
 pattern := server.Pattern{"topic": "math", "cmd": "add"}
 
 // Simple hemera add
@@ -32,7 +32,7 @@ hemera.Add(pattern, func(req server.Pattern, reply server.Reply) {
 // Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
 // Create hemera struct
-hemera := server.Hemera{Conn: nc}
+hemera, _ := server.New(nc)
 pattern := server.Pattern{"topic": "math", "cmd": "add", "a": 1, "b": 2}
 
 // Simple hemera act
