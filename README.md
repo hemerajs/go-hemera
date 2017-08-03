@@ -45,7 +45,6 @@ hemera.Act(requestPattern, func(resp server.ClientResult) {
 ```
 
 ## TODO
-
 - [X] Implement Add and Act
 - [ ] Create Context
 - [ ] Handle trace, meta and delegate informations
