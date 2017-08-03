@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 
@@ -25,6 +26,11 @@ func main() {
 	hemera.Add(pattern, func(req server.Pattern, reply server.Reply) {
 		r := req["a"].(float64) + req["b"].(float64)
 		reply(Result{Result: r})
+	})
+
+	requestPattern := server.Pattern{"topic": "math", "cmd": "add", "a": 1, "b": 2}
+	hemera.Act(requestPattern, func(resp server.ClientResult) {
+		fmt.Printf("Response: %+v\n", resp)
 	})
 
 	nc.Flush()
