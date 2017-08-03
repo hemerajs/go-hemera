@@ -24,6 +24,20 @@ var (
 	ErrActTopicRequired = errors.New("Topic is required")
 )
 
+func GetDefaultOptions() Options {
+	opts := Options{
+		Timeout: RequestTimeout,
+	}
+	return opts
+}
+
+// Option is a function on the options for hemera
+type Option func(*Options) error
+
+type Options struct {
+	Timeout time.Duration
+}
+
 // Reply is function type to represent the callback handler
 type Reply func(interface{})
 type addHandler func(Pattern, Reply)
@@ -69,6 +83,25 @@ type packet struct {
 	Trace    trace                  `json:"trace"`
 	Request  request                `json:"request"`
 	Error    *Error                 `json:"error"`
+}
+
+// New create a new Hemera struct
+func New(conn *nats.Conn, options ...Option) (Hemera, error) {
+	opts := GetDefaultOptions()
+	for _, opt := range options {
+		if err := opt(&opts); err != nil {
+			return Hemera{}, err
+		}
+	}
+	return Hemera{Conn: conn}, nil
+}
+
+// Timeout is an Option to set the timeout for a act request
+func Timeout(t time.Duration) Option {
+	return func(o *Options) error {
+		o.Timeout = t
+		return nil
+	}
 }
 
 // Add is a method to subscribe on a specific topic
