@@ -8,6 +8,9 @@
 ```
 go get github.com/nats-io/go-nats
 go get github.com/nats-io/nuid
+go get github.com/fatih/structs
+// Testing
+go get github.com/stretchr/testify/assert
 ```
 
 ### Add
