@@ -25,6 +25,6 @@ $ result: 46
 
 ## TODO
 
-- [] Implement Add and Act
-- [] Create Context
-- [] Implement Router
+- [ ] Implement Add and Act
+- [ ] Create Context
+- [ ] Implement Router
