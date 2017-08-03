@@ -1,6 +1,9 @@
 # Hemera - Go Client
 [Hemera](https://github.com/hemerajs/hemera) client for the language Go.
 
+[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](http://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.org/hemerajs/go-hemera.svg?branch=master)](http://travis-ci.org/hemerajs/go-hemera)
+
 **Status:** Experimental
 
 ## Install
