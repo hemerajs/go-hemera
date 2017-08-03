@@ -1,5 +1,5 @@
-# go-hemera
-Experimental [Hemera](https://github.com/hemerajs/hemera) client for language Go.
+# Hemera - Go Client
+Experimental [Hemera](https://github.com/hemerajs/hemera) client for the language Go.
 
 ## Install
 
