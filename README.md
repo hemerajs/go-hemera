@@ -7,7 +7,7 @@
 **Status:** Experimental
 
 ## Info
-The first step is to provide the basic RPC functionality. It should be able to define patterns and call them.
+This client is under development. The first step is to provide the basic RPC functionality. It should be able to define patterns and call them.
 JSON is chosen as default protocol.
 
 ## Install
