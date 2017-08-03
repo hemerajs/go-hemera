@@ -5,7 +5,7 @@ import (
 	"log"
 	"runtime"
 
-	server "github.com/hemerajs/go-hemera/server"
+	server "github.com/hemerajs/go-hemera"
 	nats "github.com/nats-io/go-nats"
 )
 

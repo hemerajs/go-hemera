@@ -1,4 +1,4 @@
-package server
+package hemera
 
 import (
 	"encoding/json"
@@ -17,6 +17,11 @@ const (
 	PubsubType = "pubsub"
 	// RequestTimeout is the maxiumum act timeout in miliseconds
 	RequestTimeout = 2000
+)
+
+var (
+	ErrAddTopicRequired = errors.New("Topic is required")
+	ErrActTopicRequired = errors.New("Topic is required")
 )
 
 // Reply is function type to represent the callback handler
@@ -39,8 +44,8 @@ type request struct {
 
 type ClientResult interface{}
 
-// HemeraError is the default error struct
-type HemeraError struct {
+// Error is the default error struct
+type Error struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
 	Code    int16  `json:"code"`
@@ -63,7 +68,7 @@ type packet struct {
 	Result   interface{}            `json:"result"`
 	Trace    trace                  `json:"trace"`
 	Request  request                `json:"request"`
-	Error    *HemeraError           `json:"error"`
+	Error    *Error                 `json:"error"`
 }
 
 // Add is a method to subscribe on a specific topic
@@ -72,7 +77,7 @@ func (h *Hemera) Add(p Pattern, handler addHandler) (bool, error) {
 
 	if !ok {
 		log.Fatal("Topic is required in Add definition")
-		return false, errors.New("Topic is required")
+		return false, ErrAddTopicRequired
 	}
 
 	h.Conn.QueueSubscribe(topic, topic, func(m *nats.Msg) {
@@ -89,7 +94,7 @@ func (h *Hemera) Add(p Pattern, handler addHandler) (bool, error) {
 			}
 
 			// Check if error or message was passed
-			he, ok := payload.(HemeraError)
+			he, ok := payload.(Error)
 			if ok {
 				response.Error = &he
 			} else {
@@ -112,7 +117,7 @@ func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
 
 	if !ok {
 		log.Fatal("Topic is required in Act call")
-		return false, errors.New("Topic is required")
+		return false, ErrActTopicRequired
 	}
 
 	request := packet{
@@ -135,7 +140,7 @@ func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
 	mErr := json.Unmarshal(m.Data, &pack)
 
 	if mErr != nil {
-		log.Fatal("Content could not be unmarshalled")
+		log.Fatal("Act response could not be unmarshalled")
 		return false, err
 	}
 
