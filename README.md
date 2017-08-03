@@ -18,6 +18,7 @@ hemera := server.Hemera{Conn: nc}
 pattern := server.Pattern{"topic": "math", "cmd": "add"}
 hemera.Add(pattern, func(req server.Pattern, reply server.Reply) {
   fmt.Printf("Request: %+v\n", req)
+  reply(payload | error)
 })
 ```
 
