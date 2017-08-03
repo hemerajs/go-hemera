@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 
@@ -9,7 +10,7 @@ import (
 )
 
 type Result struct {
-	Result int `json:"result"`
+	Result float64 `json:"result"`
 }
 
 func main() {
@@ -22,8 +23,14 @@ func main() {
 	hemera := server.Hemera{Conn: nc}
 
 	pattern := server.Pattern{"topic": "math", "cmd": "add"}
-	hemera.Add(pattern, func(req server.Request, reply server.Reply) {
-		reply(Result{Result: 55})
+	hemera.Add(pattern, func(req server.Pattern, reply server.Reply) {
+		r := req["a"].(float64) + req["b"].(float64)
+		reply(Result{Result: r})
+	})
+
+	requestPattern := server.Pattern{"topic": "math", "cmd": "add", "a": 1, "b": 2}
+	hemera.Act(requestPattern, func(resp server.ClientResult) {
+		fmt.Printf("Response: %+v\n", resp)
 	})
 
 	nc.Flush()
