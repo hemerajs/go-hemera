@@ -14,3 +14,13 @@ func CreateRouter(t *testing.T) {
 	assert.NotEqual(hr, nil, "they should not nil")
 
 }
+
+func AddPattern(t *testing.T) {
+	assert := assert.New(t)
+
+	hr := NewRouter()
+	hr.Add(Pattern{"a": 1, "b": 2})
+
+	assert.NotEqual(hr.Len(), 1, "Should contain one element")
+
+}
