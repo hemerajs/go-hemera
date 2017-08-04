@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"reflect"
 	"time"
 
+	"github.com/fatih/structs"
+	"github.com/mitchellh/mapstructure"
 	nats "github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
 )
@@ -20,8 +23,11 @@ const (
 )
 
 var (
-	ErrAddTopicRequired = errors.New("Topic is required")
-	ErrActTopicRequired = errors.New("Topic is required")
+	ErrAddTopicRequired           = errors.New("Topic is required")
+	ErrActTopicRequired           = errors.New("Topic is required")
+	ErrInvalidTopicType           = errors.New("Topic must be from type string")
+	ErrInvalidMapping             = errors.New("Map could not be mapped to struct")
+	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least one argument")
 )
 
 func GetDefaultOptions() Options {
@@ -40,16 +46,14 @@ type Options struct {
 
 // Reply is function type to represent the callback handler
 type Reply func(interface{})
-type addHandler func(Pattern, Reply)
 type actHandler func(ClientResult)
-
-//Pattern the default struct to represent a pattern
-type Pattern map[string]interface{}
+type Handler interface{}
 
 // Hemera is the main struct
 type Hemera struct {
-	Conn *nats.Conn
-	Opts Options
+	Conn   *nats.Conn
+	Router Router
+	Opts   Options
 }
 
 type request struct {
@@ -77,7 +81,7 @@ type trace struct {
 }
 
 type packet struct {
-	Pattern  Pattern                `json:"pattern"`
+	Pattern  interface{}            `json:"pattern"`
 	Meta     map[string]interface{} `json:"meta"`
 	Delegate map[string]interface{} `json:"delegate"`
 	Result   interface{}            `json:"result"`
@@ -91,10 +95,10 @@ func NewHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
-			return Hemera{Opts: opts}, err
+			return Hemera{Opts: opts, Router: Router{}}, err
 		}
 	}
-	return Hemera{Conn: conn, Opts: opts}, nil
+	return Hemera{Conn: conn, Opts: opts, Router: Router{}}, nil
 }
 
 // Timeout is an Option to set the timeout for a act request
@@ -106,19 +110,32 @@ func Timeout(t time.Duration) Option {
 }
 
 // Add is a method to subscribe on a specific topic
-func (h *Hemera) Add(p Pattern, handler addHandler) (bool, error) {
-	topic, ok := p["topic"].(string)
+func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
+	s := structs.New(p)
+	f := s.Field("Topic")
 
-	if !ok {
-		log.Fatal("Topic is required in Add definition")
-		return false, ErrAddTopicRequired
+	if f.IsZero() {
+		return nil, ErrAddTopicRequired
 	}
 
-	h.Conn.QueueSubscribe(topic, topic, func(m *nats.Msg) {
-		pack := packet{}
-		json.Unmarshal(m.Data, &pack)
+	topic, ok := f.Value().(string)
 
-		handler(pack.Pattern, func(payload interface{}) {
+	if !ok {
+		return nil, ErrInvalidTopicType
+	}
+
+	// Get the types of the Add handler args
+	argMsgType, argReplyType, numArgs := argInfo(cb)
+
+	if numArgs != 2 || argMsgType == nil || argReplyType == nil {
+		return nil, ErrInvalidAddHandlerArguments
+	}
+
+	cbValue := reflect.ValueOf(cb)
+
+	natsCB := func(m *nats.Msg) {
+		// The reply handler
+		replyCB := func(payload interface{}) {
 			response := packet{
 				Pattern: p,
 				Request: request{
@@ -134,24 +151,68 @@ func (h *Hemera) Add(p Pattern, handler addHandler) (bool, error) {
 			} else {
 				response.Result = payload
 			}
+
 			// Encode to JSON
 			data, _ := json.Marshal(&response)
+
 			// Send
 			h.Conn.Publish(m.Reply, data)
-		})
-	})
+		}
 
-	return true, nil
+		var oPtr reflect.Value
+		if argMsgType.Kind() != reflect.Ptr {
+			oPtr = reflect.New(argMsgType)
+		} else {
+			oPtr = reflect.New(argMsgType.Elem())
+		}
+
+		// Get "Value" of the reply callback for the reflection Call
+		oReplyPtr := reflect.ValueOf(replyCB)
+
+		pack := packet{}
+
+		// decoding hemera packet
+		json.Unmarshal(m.Data, &pack)
+
+		// Pattern is the request
+		o := pack.Pattern
+
+		// return the value of oPtr as interface {}
+		oi := oPtr.Interface()
+
+		// Decode map to struct
+		err := mapstructure.Decode(o, oi)
+
+		if err != nil {
+			panic(err)
+		}
+
+		// Get "Value" of the reply callback for the reflection Call
+		oPtr = reflect.ValueOf(oi)
+
+		// array of arguments for the callback handler
+		oV := []reflect.Value{oPtr, oReplyPtr}
+
+		cbValue.Call(oV)
+	}
+
+	return h.Conn.QueueSubscribe(topic, topic, natsCB)
 }
 
 // Act is a method to send a message to a NATS subscriber which the specific topic
-func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
+func (h *Hemera) Act(p interface{}, handler actHandler) (bool, error) {
 
-	topic, ok := p["topic"].(string)
+	s := structs.New(p)
+	f := s.Field("Topic")
+
+	if f.IsZero() {
+		return false, ErrActTopicRequired
+	}
+
+	topic, ok := f.Value().(string)
 
 	if !ok {
-		log.Fatal("Topic is required in Act call")
-		return false, ErrActTopicRequired
+		return false, ErrInvalidTopicType
 	}
 
 	request := packet{
@@ -166,7 +227,7 @@ func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
 	m, err := h.Conn.Request(topic, data, h.Opts.Timeout*time.Millisecond)
 
 	if err != nil {
-		log.Fatal("Act could not be executed")
+		log.Fatal(err)
 		return false, err
 	}
 
@@ -174,7 +235,7 @@ func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
 	mErr := json.Unmarshal(m.Data, &pack)
 
 	if mErr != nil {
-		log.Fatal("Act response could not be unmarshalled")
+		log.Fatal(mErr)
 		return false, err
 	}
 
@@ -185,4 +246,21 @@ func (h *Hemera) Act(p Pattern, handler actHandler) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Dissect the cb Handler's signature
+func argInfo(cb Handler) (reflect.Type, reflect.Type, int) {
+	cbType := reflect.TypeOf(cb)
+
+	if cbType.Kind() != reflect.Func {
+		panic("nats: Handler needs to be a func")
+	}
+
+	numArgs := cbType.NumIn()
+
+	if numArgs < 2 {
+		return nil, nil, numArgs
+	}
+
+	return cbType.In(0), cbType.In(1), numArgs
 }

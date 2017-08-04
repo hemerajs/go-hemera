@@ -16,6 +16,7 @@ JSON is chosen as default protocol.
 go get github.com/nats-io/go-nats
 go get github.com/nats-io/nuid
 go get github.com/fatih/structs
+go get github.com/mitchellh/mapstructure
 // Testing
 go get github.com/stretchr/testify/assert
 ```
@@ -23,23 +24,32 @@ go get github.com/stretchr/testify/assert
 ### Example
 
 ```go
+type MathPattern struct {
+	Topic string `json:"topic"`
+	Cmd string `json:"cmd"`
+}
+
+type RequestPattern struct {
+	Topic string `json:"topic" mapstructure:"topic"`
+	Cmd string `json:"cmd" mapstructure:"cmd"`
+	A int `json:"a" mapstructure:"a"`
+	B int `json:"b" mapstructure:"b"`
+}
+
 // Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
 // Create hemera struct
 hemera, _ := server.NewHemera(nc)
-pattern := server.Pattern{"topic": "math", "cmd": "add"}
 
-// Simple hemera add
-hemera.Add(pattern, func(req server.Pattern, reply server.Reply) {
-  fmt.Printf("Request: %+v\n", req)
-  reply(payload | error)
+// Define your server method
+pattern := MathPattern{ Topic: "math", Cmd: "add" }
+hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
+  reply(req.A + req.B) // Error{Name: "Ohh!"}
 })
 
-// Pattern
-request := server.Pattern{"topic": "math", "cmd": "add", "a": 1, "b": 2}
-
-// Simple hemera act
-hemera.Act(request, func(resp server.ClientResult) {
+// Call your server method
+requestPattern := RequestPattern{ Topic: "math", Cmd: "add", A: 1, B: 2 }
+hemera.Act(requestPattern, func(resp server.ClientResult) {
   fmt.Printf("Response: %+v\n", resp)
 })
 ```

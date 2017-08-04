@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 
@@ -10,8 +11,16 @@ import (
 	nats "github.com/nats-io/go-nats"
 )
 
-type Result struct {
-	Result float64 `json:"result"`
+type MathPattern struct {
+	Topic string `json:"topic"`
+	Cmd string `json:"cmd"`
+}
+
+type RequestPattern struct {
+	Topic string `json:"topic" mapstructure:"topic"`
+	Cmd string `json:"cmd" mapstructure:"cmd"`
+	A int `json:"a" mapstructure:"a"`
+	B int `json:"b" mapstructure:"b"`
 }
 
 func main() {
@@ -23,10 +32,10 @@ func main() {
 
 	hemera, _ := server.NewHemera(nc)
 
-	pattern := server.Pattern{"topic": "math", "cmd": "add"}
-	hemera.Add(pattern, func(req server.Pattern, reply server.Reply) {
-		r := req["a"].(float64) + req["b"].(float64)
-		reply(Result{Result: r})
+	pattern := MathPattern{ Topic: "math", Cmd: "add" }
+
+	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
+		reply(req.A + req.B)
 	})
 
 	nc.Flush()

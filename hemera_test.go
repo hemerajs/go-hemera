@@ -37,6 +37,18 @@ func RunServerWithOptions(opts natsServer.Options) *natsServer.Server {
 	return gnatsd.RunServer(&opts)
 }
 
+type MathPattern struct {
+	Topic string `json:"topic"`
+	Cmd   string `json:"cmd"`
+}
+
+type RequestPattern struct {
+	Topic string `json:"topic" mapstructure:"topic"`
+	Cmd   string `json:"cmd" mapstructure:"cmd"`
+	A     int    `json:"a" mapstructure:"a"`
+	B     int    `json:"b" mapstructure:"b"`
+}
+
 func CreateHemera(t *testing.T) {
 	assert := assert.New(t)
 
@@ -63,16 +75,15 @@ func ActRequest(t *testing.T) {
 	nc, _ := nats.Connect(nats.DefaultURL)
 	h, _ := NewHemera(nc)
 
-	pattern := Pattern{"topic": "math", "cmd": "add"}
-	h.Add(pattern, func(req Pattern, reply Reply) {
-		r := req["a"].(float64) + req["b"].(float64)
-		reply(Result{Result: r})
+	pattern := MathPattern{Topic: "math", Cmd: "add"}
+
+	h.Add(pattern, func(req *RequestPattern, reply Reply) {
+		reply(req.A + req.B)
 	})
 
-	requestPattern := Pattern{"topic": "math", "cmd": "add", "a": 1, "b": 2}
+	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
 	h.Act(requestPattern, func(resp ClientResult) {
 		ch <- true
-		actResult = resp.(float64)
 	})
 
 	nc.Flush()

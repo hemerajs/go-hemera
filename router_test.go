@@ -19,7 +19,7 @@ func AddPattern(t *testing.T) {
 	assert := assert.New(t)
 
 	hr := NewRouter()
-	hr.Add(Pattern{"a": 1, "b": 2})
+	hr.Add(MathPattern{Topic: "math", Cmd: "add"})
 
 	assert.NotEqual(hr.Len(), 1, "Should contain one element")
 
