@@ -44,8 +44,6 @@ type Options struct {
 	Timeout time.Duration
 }
 
-// Reply is function type to represent the callback handler
-type Reply func(interface{})
 type actHandler func(ClientResult)
 type Handler interface{}
 
@@ -134,31 +132,6 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	cbValue := reflect.ValueOf(cb)
 
 	natsCB := func(m *nats.Msg) {
-		// The reply handler
-		replyCB := func(payload interface{}) {
-			response := packet{
-				Pattern: p,
-				Request: request{
-					ID:          nuid.Next(),
-					RequestType: RequestType,
-				},
-			}
-
-			// Check if error or message was passed
-			he, ok := payload.(Error)
-			if ok {
-				response.Error = &he
-			} else {
-				response.Result = payload
-			}
-
-			// Encode to JSON
-			data, _ := json.Marshal(&response)
-
-			// Send
-			h.Conn.Publish(m.Reply, data)
-		}
-
 		var oPtr reflect.Value
 		if argMsgType.Kind() != reflect.Ptr {
 			oPtr = reflect.New(argMsgType)
@@ -167,7 +140,9 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		}
 
 		// Get "Value" of the reply callback for the reflection Call
-		oReplyPtr := reflect.ValueOf(replyCB)
+		reply := Reply{Pattern: p, Conn: h.Conn, Reply: m.Reply}
+
+		oReplyPtr := reflect.ValueOf(reply)
 
 		pack := packet{}
 

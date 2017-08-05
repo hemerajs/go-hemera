@@ -78,7 +78,7 @@ func ActRequest(t *testing.T) {
 	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
 	h.Add(pattern, func(req *RequestPattern, reply Reply) {
-		reply(req.A + req.B)
+		reply.Send(req.A + req.B)
 	})
 
 	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}

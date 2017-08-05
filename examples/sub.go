@@ -36,7 +36,7 @@ func main() {
 
 	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
 		fmt.Printf("Request: %+v\n", req)
-		reply(req.A + req.B)
+		reply.Send(req.A + req.B)
 	})
 
 	nc.Flush()
