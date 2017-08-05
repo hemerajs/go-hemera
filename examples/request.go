@@ -40,7 +40,7 @@ func main() {
 		log.Fatalf("Can't connect: %v\n", err)
 	}
 
-	hemera, _ := server.NewHemera(nc)
+	hemera, _ := server.Create(nc)
 
 	pattern := MathPattern{ Topic: "math", Cmd: "add" }
 

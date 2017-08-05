@@ -90,7 +90,7 @@ type packet struct {
 }
 
 // New create a new Hemera struct
-func NewHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
+func Create(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {

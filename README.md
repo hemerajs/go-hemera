@@ -39,7 +39,7 @@ type RequestPattern struct {
 // Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
 // Create hemera struct
-hemera, _ := server.NewHemera(nc)
+hemera, _ := server.Create(nc)
 
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
