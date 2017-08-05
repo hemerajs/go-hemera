@@ -206,7 +206,7 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 	for _, f := range s.Fields() {
 		fn := f.Name()
 
-		if strings.HasSuffix(fn, "_") == false {
+		if !strings.HasSuffix(fn, "_") {
 			fk := f.Kind()
 
 			switch fk {
