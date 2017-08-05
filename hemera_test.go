@@ -58,7 +58,7 @@ func CreateHemera(t *testing.T) {
 
 	ts := RunServerOnPort(testPort)
 	nc, _ := nats.Connect(nats.DefaultURL)
-	h, _ := Create(nc)
+	h, _ := Create(nc, Timeout(2000))
 
 	assert.NotEqual(h, nil, "they should not nil")
 

@@ -28,8 +28,8 @@ var (
 	ErrActTopicRequired           = errors.New("Topic is required")
 	ErrInvalidTopicType           = errors.New("Topic must be from type string")
 	ErrInvalidMapping             = errors.New("Map could not be mapped to struct")
-	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least one argument")
-	ErrInvalidActHandlerArguments = errors.New("Act Handler requires at least one argument")
+	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least two argument")
+	ErrInvalidActHandlerArguments = errors.New("Act Handler requires at least two argument")
 )
 
 func GetDefaultOptions() Options {
@@ -117,12 +117,12 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	// Get the types of the Add handler args
 	argTypes, numArgs := argInfo(cb)
 
-	if numArgs < 3 {
+	if numArgs < 2 {
 		return nil, ErrInvalidAddHandlerArguments
 	}
 
 	// Response struct
-	argMsgType := argTypes[1]
+	argMsgType := argTypes[0]
 
 	cbValue := reflect.ValueOf(cb)
 
@@ -165,7 +165,13 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		oPtr = reflect.ValueOf(oi)
 
 		// array of arguments for the callback handler
-		oV := []reflect.Value{oContextPtr, oPtr, oReplyPtr}
+		var oV []reflect.Value
+
+		if numArgs == 2 {
+			oV = []reflect.Value{oPtr, oReplyPtr}
+		} else {
+			oV = []reflect.Value{oPtr, oReplyPtr, oContextPtr}
+		}
 
 		cbValue.Call(oV)
 	}
@@ -224,12 +230,12 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 
 	argTypes, numArgs := argInfo(cb)
 
-	if numArgs < 3 {
+	if numArgs < 2 {
 		return false, ErrInvalidActHandlerArguments
 	}
 
 	// Response struct
-	argMsgType := argTypes[numArgs-1]
+	argMsgType := argTypes[0]
 
 	cbValue := reflect.ValueOf(cb)
 
@@ -305,11 +311,23 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 
 	if pack.Error != nil {
 		errVal := reflect.ValueOf(errorMsg)
-		argValues := []reflect.Value{oContextPtr, errVal, oPtr}
+
+		var argValues []reflect.Value
+		if numArgs == 2 {
+			argValues = []reflect.Value{oPtr, errVal}
+		} else {
+			argValues = []reflect.Value{oPtr, errVal, oContextPtr}
+		}
 		cbValue.Call(argValues)
 	} else {
 		errVal := reflect.ValueOf(errorMsg)
-		argValues := []reflect.Value{oContextPtr, errVal, oPtr}
+
+		var argValues []reflect.Value
+		if numArgs == 2 {
+			argValues = []reflect.Value{oPtr, errVal}
+		} else {
+			argValues = []reflect.Value{oPtr, errVal, oContextPtr}
+		}
 		cbValue.Call(argValues)
 	}
 

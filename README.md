@@ -25,13 +25,13 @@ go get github.com/stretchr/testify/assert
 
 ```go
 
-// 1. Define the pattern of your server method
+// Define the pattern of your server method
 type MathPattern struct {
 	Topic string `json:"topic"`
 	Cmd string `json:"cmd"`
 }
 
-// 2. Define the pattern of your RPC
+// Define the pattern of your RPC
 type RequestPattern struct {
 	Topic string `json:"topic" mapstructure:"topic"`
 	Cmd string `json:"cmd" mapstructure:"cmd"`
@@ -39,7 +39,7 @@ type RequestPattern struct {
 	B int `json:"b" mapstructure:"b"`
 }
 
-// 3. Define the struct of your response
+// Define the struct of your response
 type Response struct {
 	Result int `json:"result"`
 }
@@ -47,19 +47,19 @@ type Response struct {
 // Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
 
-// Create hemera struct
-hemera, _ := server.Create(nc)
+// Create hemera struct with options
+hemera, _ := server.Create(nc, server.Timeout(2000), ...)
 
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
-hemera.Add(pattern, func(context server.Context, req *RequestPattern, reply server.Reply) {
+hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
   result := Response{Result: req.A + req.B}
   reply.Send(result)
 })
 
 // Call your server method
 requestPattern := RequestPattern{ Topic: "math", Cmd: "add", A: 1, B: 2 }
-hemera.Act(requestPattern, func(context server.Context, err server.Error, resp *Response) {
+hemera.Act(requestPattern, func(resp *Response, err server.Error) {
   fmt.Printf("Response: %+v\n", resp)
 })
 ```
