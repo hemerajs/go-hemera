@@ -46,13 +46,14 @@ type Response struct {
 
 // Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
+
 // Create hemera struct
 hemera, _ := server.Create(nc)
 
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
 hemera.Add(pattern, func(context server.Context, req *RequestPattern, reply server.Reply) {
-	result := Response{Result: req.A + req.B}
+  result := Response{Result: req.A + req.B}
   reply.Send(result)
 })
 
