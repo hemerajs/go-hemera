@@ -34,7 +34,7 @@ func main() {
 
 	pattern := MathPattern{ Topic: "math", Cmd: "add" }
 
-	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
+	hemera.Add(pattern, func(context server.Context, req *RequestPattern, reply server.Reply) {
 		fmt.Printf("Request: %+v\n", req)
 		reply.Send(req.A + req.B)
 	})

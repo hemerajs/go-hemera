@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/fatih/structs"
@@ -79,13 +80,13 @@ type trace struct {
 }
 
 type packet struct {
-	Pattern  interface{}            `json:"pattern"`
-	Meta     map[string]interface{} `json:"meta"`
-	Delegate map[string]interface{} `json:"delegate"`
-	Result   interface{}            `json:"result"`
-	Trace    trace                  `json:"trace"`
-	Request  request                `json:"request"`
-	Error    *Error                 `json:"error"`
+	Pattern  interface{} `json:"pattern"`
+	Meta     interface{} `json:"meta"`
+	Delegate interface{} `json:"delegate"`
+	Result   interface{} `json:"result"`
+	Trace    trace       `json:"trace"`
+	Request  request     `json:"request"`
+	Error    *Error      `json:"error"`
 }
 
 // New create a new Hemera struct
@@ -123,9 +124,9 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	}
 
 	// Get the types of the Add handler args
-	argMsgType, argReplyType, numArgs := argInfo(cb)
+	_, argMsgType, _, numArgs := argInfo(cb)
 
-	if numArgs != 2 || argMsgType == nil || argReplyType == nil {
+	if numArgs < 3 {
 		return nil, ErrInvalidAddHandlerArguments
 	}
 
@@ -149,6 +150,10 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		// decoding hemera packet
 		json.Unmarshal(m.Data, &pack)
 
+		context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
+
+		oContextPtr := reflect.ValueOf(context)
+
 		// Pattern is the request
 		o := pack.Pattern
 
@@ -166,7 +171,7 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		oPtr = reflect.ValueOf(oi)
 
 		// array of arguments for the callback handler
-		oV := []reflect.Value{oPtr, oReplyPtr}
+		oV := []reflect.Value{oContextPtr, oPtr, oReplyPtr}
 
 		cbValue.Call(oV)
 	}
@@ -178,20 +183,58 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 func (h *Hemera) Act(p interface{}, handler actHandler) (bool, error) {
 
 	s := structs.New(p)
-	f := s.Field("Topic")
+	topicField := s.Field("Topic")
 
-	if f.IsZero() {
+	if topicField.IsZero() {
 		return false, ErrActTopicRequired
 	}
 
-	topic, ok := f.Value().(string)
+	topic, ok := topicField.Value().(string)
 
 	if !ok {
 		return false, ErrInvalidTopicType
 	}
 
+	var metaField interface{}
+	if field, ok := s.FieldOk("Meta_"); ok {
+		metaField = field.Value()
+	}
+
+	var delegateField interface{}
+	if field, ok := s.FieldOk("Delegate_"); ok {
+		delegateField = field.Value()
+	}
+
+	var pattern = make(map[string]interface{})
+
+	// pattern contains only primitive values
+	// and no meta, delegate informations
+	for _, f := range s.Fields() {
+		fn := f.Name()
+
+		if strings.HasSuffix(fn, "_") == false {
+			fk := f.Kind()
+
+			switch fk {
+			case reflect.Struct:
+			case reflect.Map:
+			case reflect.Array:
+			case reflect.Func:
+			case reflect.Chan:
+			case reflect.Slice:
+			default:
+				pattern[f.Name()] = f.Value()
+			}
+		}
+	}
+
 	request := packet{
-		Pattern: p,
+		Pattern:  pattern,
+		Meta:     metaField,
+		Delegate: delegateField,
+		Trace: trace{
+			TraceID: nuid.Next(),
+		},
 		Request: request{
 			ID:          nuid.Next(),
 			RequestType: RequestType,
@@ -224,7 +267,7 @@ func (h *Hemera) Act(p interface{}, handler actHandler) (bool, error) {
 }
 
 // Dissect the cb Handler's signature
-func argInfo(cb Handler) (reflect.Type, reflect.Type, int) {
+func argInfo(cb Handler) (reflect.Type, reflect.Type, reflect.Type, int) {
 	cbType := reflect.TypeOf(cb)
 
 	if cbType.Kind() != reflect.Func {
@@ -233,9 +276,9 @@ func argInfo(cb Handler) (reflect.Type, reflect.Type, int) {
 
 	numArgs := cbType.NumIn()
 
-	if numArgs < 2 {
-		return nil, nil, numArgs
+	if numArgs < 3 {
+		return nil, nil, nil, numArgs
 	}
 
-	return cbType.In(0), cbType.In(1), numArgs
+	return cbType.In(0), cbType.In(1), cbType.In(2), numArgs
 }

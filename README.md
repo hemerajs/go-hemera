@@ -43,7 +43,7 @@ hemera, _ := server.NewHemera(nc)
 
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
-hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
+hemera.Add(pattern, func(context server.Context, req *RequestPattern, reply server.Reply) {
   reply.Send(req.A + req.B) // Error{Name: "Ohh!"}
 })
 
