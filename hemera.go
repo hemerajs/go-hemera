@@ -29,6 +29,7 @@ var (
 	ErrInvalidTopicType           = errors.New("Topic must be from type string")
 	ErrInvalidMapping             = errors.New("Map could not be mapped to struct")
 	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least one argument")
+	ErrInvalidActHandlerArguments = errors.New("Act Handler requires at least one argument")
 )
 
 func GetDefaultOptions() Options {
@@ -45,7 +46,6 @@ type Options struct {
 	Timeout time.Duration
 }
 
-type actHandler func(ClientResult)
 type Handler interface{}
 
 // Hemera is the main struct
@@ -58,15 +58,6 @@ type Hemera struct {
 type request struct {
 	ID          string `json:"id"`
 	RequestType string `json:"type"`
-}
-
-type ClientResult interface{}
-
-// Error is the default error struct
-type Error struct {
-	Name    string `json:"name"`
-	Message string `json:"message"`
-	Code    int16  `json:"code"`
 }
 
 type trace struct {
@@ -124,11 +115,14 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	}
 
 	// Get the types of the Add handler args
-	_, argMsgType, _, numArgs := argInfo(cb)
+	argTypes, numArgs := argInfo(cb)
 
 	if numArgs < 3 {
 		return nil, ErrInvalidAddHandlerArguments
 	}
+
+	// Response struct
+	argMsgType := argTypes[1]
 
 	cbValue := reflect.ValueOf(cb)
 
@@ -180,7 +174,7 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 }
 
 // Act is a method to send a message to a NATS subscriber which the specific topic
-func (h *Hemera) Act(p interface{}, handler actHandler) (bool, error) {
+func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 
 	s := structs.New(p)
 	topicField := s.Field("Topic")
@@ -228,6 +222,24 @@ func (h *Hemera) Act(p interface{}, handler actHandler) (bool, error) {
 		}
 	}
 
+	argTypes, numArgs := argInfo(cb)
+
+	if numArgs < 3 {
+		return false, ErrInvalidActHandlerArguments
+	}
+
+	// Response struct
+	argMsgType := argTypes[numArgs-1]
+
+	cbValue := reflect.ValueOf(cb)
+
+	var oPtr reflect.Value
+	if argMsgType.Kind() != reflect.Ptr {
+		oPtr = reflect.New(argMsgType)
+	} else {
+		oPtr = reflect.New(argMsgType.Elem())
+	}
+
 	request := packet{
 		Pattern:  pattern,
 		Meta:     metaField,
@@ -257,28 +269,67 @@ func (h *Hemera) Act(p interface{}, handler actHandler) (bool, error) {
 		return false, err
 	}
 
+	// return the value of oPtr as interface {}
+	oi := oPtr.Interface()
+
+	// Pattern is the request
+	o := pack.Result
+
+	// Decode result map to struct
+	errResultMap := mapstructure.Decode(o, oi)
+
+	if errResultMap != nil {
+		panic(errResultMap)
+	}
+
+	// Get "Value" of the reply callback for the reflection Call
+	oPtr = reflect.ValueOf(oi)
+
+	errMsg := pack.Error
+
+	// create container for error
+	errorMsg := Error{}
+
+	if errMsg != nil {
+		// Decode error map to struct
+		errErrMap := mapstructure.Decode(errMsg, &errorMsg)
+
+		if errErrMap != nil {
+			panic(errErrMap)
+		}
+	}
+
+	context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
+
+	oContextPtr := reflect.ValueOf(context)
+
 	if pack.Error != nil {
-		handler(pack.Error)
+		errVal := reflect.ValueOf(errorMsg)
+		argValues := []reflect.Value{oContextPtr, errVal, oPtr}
+		cbValue.Call(argValues)
 	} else {
-		handler(pack.Result)
+		errVal := reflect.ValueOf(errorMsg)
+		argValues := []reflect.Value{oContextPtr, errVal, oPtr}
+		cbValue.Call(argValues)
 	}
 
 	return true, nil
 }
 
 // Dissect the cb Handler's signature
-func argInfo(cb Handler) (reflect.Type, reflect.Type, reflect.Type, int) {
+func argInfo(cb Handler) ([]reflect.Type, int) {
 	cbType := reflect.TypeOf(cb)
 
 	if cbType.Kind() != reflect.Func {
-		panic("nats: Handler needs to be a func")
+		panic("hemera: Handler needs to be a func")
 	}
 
 	numArgs := cbType.NumIn()
+	argTypes := []reflect.Type{}
 
-	if numArgs < 3 {
-		return nil, nil, nil, numArgs
+	for i := 0; i < numArgs; i++ {
+		argTypes = append(argTypes, cbType.In(i))
 	}
 
-	return cbType.In(0), cbType.In(1), cbType.In(2), numArgs
+	return argTypes, numArgs
 }

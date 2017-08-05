@@ -49,12 +49,16 @@ type RequestPattern struct {
 	B     int    `json:"b" mapstructure:"b"`
 }
 
+type Response struct {
+	Result int `json:"result"`
+}
+
 func CreateHemera(t *testing.T) {
 	assert := assert.New(t)
 
 	ts := RunServerOnPort(testPort)
 	nc, _ := nats.Connect(nats.DefaultURL)
-	h, _ := NewHemera(nc)
+	h, _ := Create(nc)
 
 	assert.NotEqual(h, nil, "they should not nil")
 
@@ -73,16 +77,16 @@ func ActRequest(t *testing.T) {
 
 	ts := RunServerOnPort(testPort)
 	nc, _ := nats.Connect(nats.DefaultURL)
-	h, _ := NewHemera(nc)
+	h, _ := Create(nc)
 
 	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
-	h.Add(pattern, func(req *RequestPattern, reply Reply) {
+	h.Add(pattern, func(context Context, req *RequestPattern, reply Reply) {
 		reply.Send(req.A + req.B)
 	})
 
 	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
-	h.Act(requestPattern, func(resp ClientResult) {
+	h.Act(requestPattern, func(context Context, err Error, resp *Response) {
 		ch <- true
 	})
 

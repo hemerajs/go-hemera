@@ -33,6 +33,10 @@ type RequestPattern struct {
 	Delegate_ Delegate `json:"meta"`
 }
 
+type Response struct {
+	Result int `json:"result"`
+}
+
 func main() {
 	nc, err := nats.Connect(nats.DefaultURL)
 
@@ -46,7 +50,8 @@ func main() {
 
 	hemera.Add(pattern, func(context server.Context, req *RequestPattern, reply server.Reply) {
 		fmt.Printf("Request: %+v\n", context)
-		reply.Send(req.A + req.B)
+		result := Response{Result: req.A + req.B}
+		reply.Send(result)
 	})
 
 	requestPattern := RequestPattern{
@@ -58,8 +63,8 @@ func main() {
 		Meta_: Meta{ Token : "ABC" },
 	}
 	
-	hemera.Act(requestPattern, func(resp server.ClientResult) {
-		fmt.Printf("Response: %+v\n", resp)
+	hemera.Act(requestPattern, func(context server.Context, err server.Error, resp *Response) {
+		fmt.Printf("Response: %+v\n", err)
 	})
 
 	nc.Flush()
