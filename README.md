@@ -53,7 +53,7 @@ hemera, _ := server.Create(nc, server.Timeout(2000), ...)
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
 hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
-	fmt.Printf("Request: %+v\n", req)
+  fmt.Printf("Request: %+v\n", req)
   result := Response{Result: req.A + req.B}
   reply.Send(result)
 })
@@ -71,7 +71,7 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
 hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
-	fmt.Printf("Context: %+v\n", context)
+  fmt.Printf("Context: %+v\n", context)
   result := Response{Result: req.A + req.B}
   reply.Send(result)
 })
