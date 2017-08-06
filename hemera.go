@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/fatih/structs"
@@ -115,7 +114,7 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	}
 
 	// Get the types of the Add handler args
-	argTypes, numArgs := argInfo(cb)
+	argTypes, numArgs := ArgInfo(cb)
 
 	if numArgs < 2 {
 		return nil, ErrInvalidAddHandlerArguments
@@ -205,30 +204,9 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 		delegateField = field.Value()
 	}
 
-	var pattern = make(map[string]interface{})
+	pattern := CleanPattern(p)
 
-	// pattern contains only primitive values
-	// and no meta, delegate informations
-	for _, f := range s.Fields() {
-		fn := f.Name()
-
-		if !strings.HasSuffix(fn, "_") {
-			fk := f.Kind()
-
-			switch fk {
-			case reflect.Struct:
-			case reflect.Map:
-			case reflect.Array:
-			case reflect.Func:
-			case reflect.Chan:
-			case reflect.Slice:
-			default:
-				pattern[f.Name()] = f.Value()
-			}
-		}
-	}
-
-	argTypes, numArgs := argInfo(cb)
+	argTypes, numArgs := ArgInfo(cb)
 
 	if numArgs < 2 {
 		return false, ErrInvalidActHandlerArguments
@@ -332,22 +310,4 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 	}
 
 	return true, nil
-}
-
-// Dissect the cb Handler's signature
-func argInfo(cb Handler) ([]reflect.Type, int) {
-	cbType := reflect.TypeOf(cb)
-
-	if cbType.Kind() != reflect.Func {
-		panic("hemera: Handler needs to be a func")
-	}
-
-	numArgs := cbType.NumIn()
-	argTypes := []reflect.Type{}
-
-	for i := 0; i < numArgs; i++ {
-		argTypes = append(argTypes, cbType.In(i))
-	}
-
-	return argTypes, numArgs
 }
