@@ -88,4 +88,5 @@ hemera.Act(requestPattern, func(resp *Response, context server.Context) {
 - [X] Implement Add and Act
 - [X] Infer Response in Act
 - [X] Create Context (trace, meta, delegate)
-- [ ] Implement Pattern matching (router)
+- [ ] Clean request pattern from none primitive values
+- [X] Implement basic pattern matching (router)

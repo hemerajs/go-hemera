@@ -29,8 +29,6 @@ type RequestPattern struct {
 	Cmd string `json:"cmd" mapstructure:"cmd"`
 	A int `json:"a" mapstructure:"a"`
 	B int `json:"b" mapstructure:"b"`
-	Meta_ Meta `json:"meta"`
-	Delegate_ Delegate `json:"meta"`
 }
 
 type Response struct {
@@ -46,22 +44,15 @@ func main() {
 
 	hemera, _ := server.Create(nc)
 
-	pattern := MathPattern{ Topic: "math", Cmd: "add" }
+	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
 	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
 		fmt.Printf("Request: %+v\n", req)
-		result := Response{Result: req.A + req.B}
+		result := Response{}
 		reply.Send(result)
 	})
 
-	requestPattern := RequestPattern{
-		Topic: "math",
-		Cmd: "add",
-		A: 1,
-		B: 2,
-		Delegate_: Delegate{ Query : "DEF" },
-		Meta_: Meta{ Token : "ABC" },
-	}
+	requestPattern := RequestPattern{Topic: "math", Cmd: "add"}
 	
 	hemera.Act(requestPattern, func(resp *Response, err server.Error, context server.Context) {
 		fmt.Printf("Response: %+v\n", resp)

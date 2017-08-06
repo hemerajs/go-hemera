@@ -1,20 +1,21 @@
 package hemera
 
 import (
-	"sort"
-
 	"github.com/fatih/structs"
 	"github.com/google/btree"
 )
 
-type PatternField string
-type PatternFields []PatternField
+type PatternField struct {
+	Key   string
+	Value interface{}
+}
+type PatternFields map[string]PatternField
 
 type PatternSet struct {
-	Pattern interface{}
-	Weight  int
-	Fields  PatternFields
-	Payload interface{}
+	Pattern  interface{}
+	Weight   int
+	Fields   PatternFields
+	Callback interface{}
 }
 
 func (p PatternSet) Less(item btree.Item) bool {
@@ -38,7 +39,7 @@ func (r *Router) Add(args ...interface{}) error {
 	ps := convertToPatternSet(args[0])
 
 	if len(args) == 2 {
-		ps.Payload = args[1]
+		ps.Callback = args[1]
 	}
 
 	r.Tree.ReplaceOrInsert(ps)
@@ -47,29 +48,41 @@ func (r *Router) Add(args ...interface{}) error {
 }
 
 func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
-	for i, v := range a {
-		if v != b[i] {
+	for _, field := range b {
+		if a[field.Key].Value != field.Value {
 			return false
 		}
 	}
+
 	return true
 }
 
 func equals(a PatternSet, b PatternSet) bool {
-	if b.Weight > a.Weight {
-		return false
-	}
-
 	return FieldsArrayEquals(a.Fields, b.Fields)
 }
 
-func (r *Router) Lookup(result chan<- PatternSet, p interface{}) {
-
+func (r *Router) Lookup(result chan<- interface{}, p interface{}) {
 	ps := convertToPatternSet(p)
+
+	r.Tree.DescendLessOrEqual(ps, func(i btree.Item) bool {
+		ips := i.(PatternSet)
+
+		if equals(ps, ips) {
+			result <- ips
+			return false
+		}
+
+		return true
+	})
 
 	r.Tree.AscendGreaterOrEqual(ps, func(i btree.Item) bool {
 		ips := i.(PatternSet)
-		if equals(ps, ips) {
+
+		// When add pattern is not a subset
+		if ips.Weight > ps.Weight {
+			result <- ErrPatternNotFound
+			return false
+		} else if equals(ps, ips) {
 			result <- ips
 			return false
 		}
@@ -82,32 +95,17 @@ func convertToPatternSet(p interface{}) PatternSet {
 	fields := structs.Fields(p)
 
 	ps := PatternSet{}
+	ps.Fields = make(PatternFields, 10)
 	ps.Pattern = p
 	ps.Weight = 0
 
 	for _, field := range fields {
-
 		if !field.IsZero() {
-			pf := PatternField(field.Name())
-			ps.Fields = append(ps.Fields, pf)
+			pf := PatternField{Key: field.Name(), Value: field.Value()}
+			ps.Fields[field.Name()] = pf
 			ps.Weight++
 		}
 	}
 
-	sort.Sort(ps.Fields)
-
 	return ps
-}
-
-func (slice PatternFields) Len() int {
-	return len(slice)
-}
-
-// Less ascending alphabetical sort order
-func (slice PatternFields) Less(i, j int) bool {
-	return slice[i] < slice[j]
-}
-
-func (slice PatternFields) Swap(i, j int) {
-	slice[i], slice[j] = slice[j], slice[i]
 }

@@ -29,6 +29,7 @@ var (
 	ErrInvalidMapping             = errors.New("Map could not be mapped to struct")
 	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least two argument")
 	ErrInvalidActHandlerArguments = errors.New("Act Handler requires at least two argument")
+	ErrPatternNotFound            = errors.New("Pattern not found")
 )
 
 func GetDefaultOptions() Options {
@@ -120,49 +121,65 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		return nil, ErrInvalidAddHandlerArguments
 	}
 
-	h.Router.Add(p, &cb)
+	h.Router.Add(p, cb)
 
 	// Response struct
 	argMsgType := argTypes[0]
 
-	cbValue := reflect.ValueOf(cb)
+	return h.Conn.QueueSubscribe(topic, topic, func(m *nats.Msg) {
+		h.callAddAction(topic, m, argMsgType, numArgs)
+	})
+}
 
-	natsCB := func(m *nats.Msg) {
-		var oPtr reflect.Value
-		if argMsgType.Kind() != reflect.Ptr {
-			oPtr = reflect.New(argMsgType)
-		} else {
-			oPtr = reflect.New(argMsgType.Elem())
-		}
+func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Type, numArgs int) {
+	var oPtr reflect.Value
+	if mContainer.Kind() != reflect.Ptr {
+		oPtr = reflect.New(mContainer)
+	} else {
+		oPtr = reflect.New(mContainer.Elem())
+	}
 
+	pack := packet{}
+
+	// decoding hemera packet
+	json.Unmarshal(m.Data, &pack)
+
+	context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
+
+	oContextPtr := reflect.ValueOf(context)
+
+	// Pattern is the request
+	o := pack.Pattern
+
+	// return the value of oPtr as interface {}
+	oi := oPtr.Interface()
+
+	// Decode map to struct
+	err := mapstructure.Decode(o, oi)
+
+	if err != nil {
+		panic(err)
+	}
+
+	ch := make(chan interface{})
+
+	e := oPtr.Elem().Interface()
+
+	go h.Router.Lookup(ch, e)
+
+	p := <-ch
+
+	switch p := p.(type) {
+	case PatternSet:
 		// Get "Value" of the reply callback for the reflection Call
-		reply := Reply{Pattern: p, Conn: h.Conn, Reply: m.Reply}
+		reply := Reply{Pattern: p.Pattern, Conn: h.Conn, Reply: m.Reply}
 
 		oReplyPtr := reflect.ValueOf(reply)
 
-		pack := packet{}
-
-		// decoding hemera packet
-		json.Unmarshal(m.Data, &pack)
-
-		context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
-
-		oContextPtr := reflect.ValueOf(context)
-
-		// Pattern is the request
-		o := pack.Pattern
-
-		// return the value of oPtr as interface {}
-		oi := oPtr.Interface()
-
-		// Decode map to struct
-		err := mapstructure.Decode(o, oi)
-
-		if err != nil {
-			panic(err)
-		}
+		cbValue := reflect.ValueOf(p.Callback)
 
 		// Get "Value" of the reply callback for the reflection Call
+
 		oPtr = reflect.ValueOf(oi)
 
 		// array of arguments for the callback handler
@@ -175,12 +192,9 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		}
 
 		cbValue.Call(oV)
+	default:
+		log.Fatal(p)
 	}
-
-	return h.Conn.QueueSubscribe(topic, topic, natsCB)
-}
-
-func susbcribe(topic string) {
 }
 
 // Act is a method to send a message to a NATS subscriber which the specific topic

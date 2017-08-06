@@ -45,7 +45,7 @@ func TestAddPattern(t *testing.T) {
 func TestMatchedLookup(t *testing.T) {
 	assert := assert.New(t)
 
-	ch := make(chan PatternSet)
+	ch := make(chan interface{})
 
 	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
@@ -57,14 +57,39 @@ func TestMatchedLookup(t *testing.T) {
 	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add"})
 
 	p := <-ch
-	assert.Equal(p.Payload, "test3", "Should be `test3`")
+	assert.Equal(p.(PatternSet).Callback, "test3", "Should be `test3`")
+
+	ch = make(chan interface{})
+
+	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add", A: "1"})
+
+	p = <-ch
+	assert.Equal(p.(PatternSet).Callback, "test4", "Should be `test4`")
+
+}
+
+func TestUnMatchedLookupWhenSubset(t *testing.T) {
+	assert := assert.New(t)
+
+	ch := make(chan interface{})
+
+	hr := NewRouter()
+	hr.Add(DynPattern{Topic: "math"}, "test")
+	hr.Add(DynPattern{Topic: "payment"}, "test2")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
+
+	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add"})
+
+	p := <-ch
+	assert.Equal(p.(error).Error(), "Pattern not found", "Should pattern not found")
 
 }
 
 func TestUnMatchedLookup(t *testing.T) {
 	assert := assert.New(t)
 
-	ch := make(chan PatternSet)
+	ch := make(chan interface{})
 
 	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
@@ -94,7 +119,7 @@ func BenchmarkLookup(b *testing.B) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
 	for n := 0; n < b.N; n++ {
-		ch := make(chan PatternSet)
+		ch := make(chan interface{})
 		go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add"})
 		<-ch
 	}
