@@ -5,10 +5,7 @@ import (
 	"github.com/google/btree"
 )
 
-type PatternField struct {
-	Key   string
-	Value interface{}
-}
+type PatternField interface{}
 type PatternFields map[string]PatternField
 
 type PatternSet struct {
@@ -48,8 +45,8 @@ func (r *Router) Add(args ...interface{}) error {
 }
 
 func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
-	for _, field := range b {
-		if a[field.Key].Value != field.Value {
+	for key, field := range b {
+		if a[key] != field {
 			return false
 		}
 	}
@@ -101,8 +98,7 @@ func convertToPatternSet(p interface{}) PatternSet {
 
 	for _, field := range fields {
 		if !field.IsZero() {
-			pf := PatternField{Key: field.Name(), Value: field.Value()}
-			ps.Fields[field.Name()] = pf
+			ps.Fields[field.Name()] = field.Value()
 			ps.Weight++
 		}
 	}
