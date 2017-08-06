@@ -17,6 +17,7 @@ go get github.com/nats-io/go-nats
 go get github.com/nats-io/nuid
 go get github.com/fatih/structs
 go get github.com/mitchellh/mapstructure
+go get github.com/google/btree
 // Testing
 go get github.com/stretchr/testify/assert
 ```
