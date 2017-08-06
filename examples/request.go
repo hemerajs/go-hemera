@@ -64,7 +64,7 @@ func main() {
 	}
 	
 	hemera.Act(requestPattern, func(resp *Response, err server.Error, context server.Context) {
-		fmt.Printf("Response: %+v\n", err)
+		fmt.Printf("Response: %+v\n", resp)
 	})
 
 	nc.Flush()
