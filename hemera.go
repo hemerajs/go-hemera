@@ -84,10 +84,10 @@ func Create(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
-			return Hemera{Opts: opts, Router: Router{}}, err
+			return Hemera{Opts: opts, Router: NewRouter()}, err
 		}
 	}
-	return Hemera{Conn: conn, Opts: opts, Router: Router{}}, nil
+	return Hemera{Conn: conn, Opts: opts, Router: NewRouter()}, nil
 }
 
 // Timeout is an Option to set the timeout for a act request
@@ -119,6 +119,8 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	if numArgs < 2 {
 		return nil, ErrInvalidAddHandlerArguments
 	}
+
+	h.Router.Add(p, &cb)
 
 	// Response struct
 	argMsgType := argTypes[0]
@@ -176,6 +178,9 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	}
 
 	return h.Conn.QueueSubscribe(topic, topic, natsCB)
+}
+
+func susbcribe(topic string) {
 }
 
 // Act is a method to send a message to a NATS subscriber which the specific topic
