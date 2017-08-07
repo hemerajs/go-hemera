@@ -112,8 +112,8 @@ func TestActRequest(t *testing.T) {
 
 	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
 	go h.Act(requestPattern, func(resp *Response, err Error, context Context) {
-		ch <- true
 		actResult = resp
+		ch <- true
 	})
 
 	nc.Flush()

@@ -66,7 +66,7 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 ```
 
 ## TODO
-- [ ] Setup nats server for testing
+- [X] Setup nats server for testing
 - [X] Implement Add and Act
 - [X] Infer Response in Act
 - [X] Create Context (trace, meta, delegate)
