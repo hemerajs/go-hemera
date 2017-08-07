@@ -26,7 +26,7 @@ func NewRouter() Router {
 func (r *Router) Len() int {
 	total := 0
 	for _, bucket := range r.Map {
-		for _ = range bucket {
+		for range bucket {
 			total++
 		}
 	}
