@@ -3,14 +3,12 @@ package hemera
 import (
 	"encoding/json"
 
-	nats "github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
 )
 
 type Reply struct {
 	Hemera  *Hemera
 	Pattern interface{}
-	Conn    *nats.Conn
 	Reply   string
 }
 
@@ -35,5 +33,5 @@ func (r *Reply) Send(payload interface{}) {
 	data, _ := json.Marshal(&response)
 
 	// Send
-	r.Conn.Publish(r.Reply, data)
+	r.Hemera.Conn.Publish(r.Reply, data)
 }
