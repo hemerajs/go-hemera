@@ -81,7 +81,7 @@ type packet struct {
 }
 
 // New create a new Hemera struct
-func Create(conn *nats.Conn, options ...Option) (Hemera, error) {
+func CreateHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
@@ -167,7 +167,7 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 
 	if err == nil {
 		// Get "Value" of the reply callback for the reflection Call
-		reply := Reply{Pattern: p.Pattern, Conn: h.Conn, Reply: m.Reply}
+		reply := Reply{Pattern: p.Pattern, Conn: h.Conn, Reply: m.Reply, Hemera: h}
 
 		oReplyPtr := reflect.ValueOf(reply)
 

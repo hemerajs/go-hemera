@@ -48,7 +48,7 @@ type Response struct {
 nc, _ := nats.Connect(nats.DefaultURL)
 
 // Create hemera struct with options
-hemera, _ := server.Create(nc, server.Timeout(2000), ...)
+hemera, _ := server.CreateHemera(nc, server.Timeout(2000), ...)
 
 // Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }

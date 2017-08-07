@@ -8,6 +8,7 @@ import (
 )
 
 type Reply struct {
+	Hemera  *Hemera
 	Pattern interface{}
 	Conn    *nats.Conn
 	Reply   string

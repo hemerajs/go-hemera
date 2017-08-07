@@ -78,7 +78,7 @@ func TestCreateHemera(t *testing.T) {
 
 	nc.Flush()
 
-	h, _ := Create(nc)
+	h, _ := CreateHemera(nc)
 
 	assert.NotEqual(h, nil, "they should not nil")
 
@@ -100,7 +100,7 @@ func TestActRequest(t *testing.T) {
 		panic(err)
 	}
 
-	h, _ := Create(nc)
+	h, _ := CreateHemera(nc)
 
 	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
