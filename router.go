@@ -2,7 +2,6 @@ package hemera
 
 import (
 	"github.com/fatih/structs"
-	"github.com/google/btree"
 )
 
 type PatternField interface{}
@@ -15,20 +14,26 @@ type PatternSet struct {
 	Callback interface{}
 }
 
-func (p PatternSet) Less(item btree.Item) bool {
-	return p.Weight < item.(PatternSet).Weight
-}
-
 type Router struct {
-	Tree *btree.BTree
+	Map map[int][]PatternSet
 }
 
 func NewRouter() Router {
-	tree := btree.New(7)
-	return Router{Tree: tree}
+	m := make(map[int][]PatternSet, 10)
+	return Router{Map: m}
 }
 
-func (r *Router) Add(args ...interface{}) error {
+func (r *Router) Len() int {
+	total := 0
+	for _, bucket := range r.Map {
+		for _ = range bucket {
+			total++
+		}
+	}
+	return total
+}
+
+func (r *Router) Add(args ...interface{}) {
 	if len(args) == 0 {
 		panic("hemera: Requires at least one argument")
 	}
@@ -39,9 +44,7 @@ func (r *Router) Add(args ...interface{}) error {
 		ps.Callback = args[1]
 	}
 
-	r.Tree.ReplaceOrInsert(ps)
-
-	return nil
+	r.Map[ps.Weight] = append(r.Map[ps.Weight], ps)
 }
 
 func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
@@ -58,41 +61,34 @@ func equals(a PatternSet, b PatternSet) bool {
 	return FieldsArrayEquals(a.Fields, b.Fields)
 }
 
-func (r *Router) Lookup(result chan<- interface{}, p interface{}) {
-	ps := convertToPatternSet(p)
+func (r *Router) Lookup(p interface{}) (*PatternSet, error) {
 
-	r.Tree.DescendLessOrEqual(ps, func(i btree.Item) bool {
-		ips := i.(PatternSet)
+	if len(r.Map) == 0 {
+		return nil, ErrPatternNotFound
+	}
 
-		if equals(ps, ips) {
-			result <- ips
-			return false
+	a := convertToPatternSet(p)
+
+	for i := a.Weight; i > 0; i-- {
+		if len(r.Map[i]) != 0 {
+			bucket := r.Map[i]
+			for _, pset := range bucket {
+				if equals(a, pset) {
+					return &pset, nil
+				}
+			}
 		}
+	}
 
-		return true
-	})
+	return nil, ErrPatternNotFound
 
-	r.Tree.AscendGreaterOrEqual(ps, func(i btree.Item) bool {
-		ips := i.(PatternSet)
-
-		// When add pattern is not a subset
-		if ips.Weight > ps.Weight {
-			result <- ErrPatternNotFound
-			return false
-		} else if equals(ps, ips) {
-			result <- ips
-			return false
-		}
-
-		return true
-	})
 }
 
 func convertToPatternSet(p interface{}) PatternSet {
 	fields := structs.Fields(p)
 
 	ps := PatternSet{}
-	ps.Fields = make(PatternFields, 10)
+	ps.Fields = make(PatternFields, 20)
 	ps.Pattern = p
 	ps.Weight = 0
 

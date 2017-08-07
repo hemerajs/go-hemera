@@ -161,16 +161,11 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 		panic(err)
 	}
 
-	ch := make(chan interface{})
-
 	e := oPtr.Elem().Interface()
 
-	go h.Router.Lookup(ch, e)
+	p, err := h.Router.Lookup(e)
 
-	p := <-ch
-
-	switch p := p.(type) {
-	case PatternSet:
+	if err == nil {
 		// Get "Value" of the reply callback for the reflection Call
 		reply := Reply{Pattern: p.Pattern, Conn: h.Conn, Reply: m.Reply}
 
@@ -192,8 +187,8 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 		}
 
 		cbValue.Call(oV)
-	default:
-		log.Fatal(p)
+	} else {
+		log.Fatal(err)
 	}
 }
 

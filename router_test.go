@@ -38,14 +38,12 @@ func TestAddPattern(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"})
 
-	assert.Equal(hr.Tree.Len(), 3, "Should contain one element")
+	assert.Equal(hr.Len(), 3, "Should contain 3 elements")
 
 }
 
 func TestMatchedLookup(t *testing.T) {
 	assert := assert.New(t)
-
-	ch := make(chan interface{})
 
 	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
@@ -54,24 +52,56 @@ func TestMatchedLookup(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
-	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add"})
+	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	p := <-ch
-	assert.Equal(p.(PatternSet).Callback, "test3", "Should be `test3`")
+	assert.Equal(p.Callback, "test3", "Should be `test3`")
 
-	ch = make(chan interface{})
+	p, _ = hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 
-	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add", A: "1"})
-
-	p = <-ch
-	assert.Equal(p.(PatternSet).Callback, "test4", "Should be `test4`")
+	assert.Equal(p.Callback, "test4", "Should be `test4`")
 
 }
 
-func TestUnMatchedLookupWhenSubset(t *testing.T) {
+func TestMatchedLookupWhenEqualWeight(t *testing.T) {
 	assert := assert.New(t)
 
-	ch := make(chan interface{})
+	hr := NewRouter()
+	hr.Add(DynPattern{Topic: "math"}, "test")
+
+	p, _ := hr.Lookup(DynPattern{Topic: "math"})
+
+	assert.Equal(p.Callback, "test", "Should be `test`")
+
+}
+
+func TestMatchedLookupSubset(t *testing.T) {
+	assert := assert.New(t)
+
+	hr := NewRouter()
+	hr.Add(DynPattern{Topic: "math"}, "test")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
+
+	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+
+	assert.Equal(p.Callback, "test", "Should be `test`")
+
+}
+
+func TestMatchedLookupLast(t *testing.T) {
+	assert := assert.New(t)
+
+	hr := NewRouter()
+	hr.Add(DynPattern{Topic: "math"}, "test")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
+
+	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
+
+	assert.Equal(p.Callback, "test1", "Should be `test`")
+
+}
+
+func TestMatchedLookupWhenSubset(t *testing.T) {
+	assert := assert.New(t)
 
 	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
@@ -79,33 +109,32 @@ func TestUnMatchedLookupWhenSubset(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
-	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add"})
+	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	p := <-ch
-	assert.Equal(p.(error).Error(), "Pattern not found", "Should pattern not found")
+	assert.Equal(p.Callback, "test", "Should be `test`")
 
 }
 
-func TestUnMatchedLookup(t *testing.T) {
+func TestUnMatchedLookupNoPartialMatchSupport(t *testing.T) {
 	assert := assert.New(t)
 
-	ch := make(chan interface{})
+	hr := NewRouter()
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
+
+	_, err := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+
+	assert.Equal(err.Error(), "Pattern not found", "Should pattern not found")
+
+}
+
+func TestUnMatchedLookupWhenTreeEmpty(t *testing.T) {
+	assert := assert.New(t)
 
 	hr := NewRouter()
-	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "payment"}, "test2")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add22"}, "test3")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
-	go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add222"})
+	_, err := hr.Lookup(DynPattern{Topic: "math", Cmd: "add222"})
 
-	select {
-	case <-ch:
-		panic("Incorrect Pattern matched")
-	default:
-		assert.Equal(true, true, "Should not match")
-	}
+	assert.Equal(err.Error(), "Pattern not found", "Should pattern not found")
 
 }
 
@@ -119,9 +148,7 @@ func BenchmarkLookup(b *testing.B) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
 	for n := 0; n < b.N; n++ {
-		ch := make(chan interface{})
-		go hr.Lookup(ch, DynPattern{Topic: "math", Cmd: "add"})
-		<-ch
+		hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 	}
 
 }

@@ -2,6 +2,7 @@ package hemera
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -11,7 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testPort = 8368
+const TEST_PORT = 8368
+
+var reconnectOpts = nats.Options{
+	Url:            fmt.Sprintf("nats://localhost:%d", TEST_PORT),
+	AllowReconnect: true,
+	MaxReconnect:   10,
+	ReconnectWait:  100 * time.Millisecond,
+	Timeout:        nats.DefaultTimeout,
+}
 
 // Dumb wait program to sync on callbacks, etc... Will timeout
 func Wait(ch chan bool) error {
@@ -56,14 +65,18 @@ type Response struct {
 func TestCreateHemera(t *testing.T) {
 	assert := assert.New(t)
 
-	ts := RunServerOnPort(testPort)
+	ts := RunServerOnPort(TEST_PORT)
 	defer ts.Shutdown()
 
-	nc, err := nats.Connect(nats.DefaultURL)
+	opts := reconnectOpts
+	nc, err := opts.Connect()
+	defer nc.Close()
 
 	if err != nil {
 		panic(err)
 	}
+
+	nc.Flush()
 
 	h, _ := Create(nc)
 
@@ -76,11 +89,16 @@ func TestActRequest(t *testing.T) {
 	ch := make(chan bool)
 	actResult := &Response{}
 
-	ts := RunServerOnPort(testPort)
+	ts := RunServerOnPort(TEST_PORT)
 	defer ts.Shutdown()
 
-	nc, _ := nats.Connect(nats.DefaultURL)
+	opts := reconnectOpts
+	nc, err := opts.Connect()
 	defer nc.Close()
+
+	if err != nil {
+		panic(err)
+	}
 
 	h, _ := Create(nc)
 
@@ -90,20 +108,20 @@ func TestActRequest(t *testing.T) {
 		reply.Send(Response{Result: req.A + req.B})
 	})
 
+	nc.Flush()
+
 	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
-	h.Act(requestPattern, func(resp *Response, err Error, context Context) {
+	go h.Act(requestPattern, func(resp *Response, err Error, context Context) {
 		ch <- true
 		actResult = resp
 	})
 
 	nc.Flush()
 
-	if err := nc.LastError(); err != nil {
-		panic(err)
+	if err := Wait(ch); err != nil {
+		t.Fatal("Did not receive our message")
 	}
 
-	if err := Wait(ch); err != nil {
-		assert.Equal(actResult.Result, 3, "Should be 3")
-	}
+	assert.Equal(actResult.Result, 3, "Should be 3")
 
 }

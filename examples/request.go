@@ -48,11 +48,11 @@ func main() {
 
 	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
 		fmt.Printf("Request: %+v\n", req)
-		result := Response{}
+		result := Response{Result: req.A + req.B}
 		reply.Send(result)
 	})
 
-	requestPattern := RequestPattern{Topic: "math", Cmd: "add"}
+	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
 	
 	hemera.Act(requestPattern, func(resp *Response, err server.Error, context server.Context) {
 		fmt.Printf("Response: %+v\n", resp)
