@@ -66,24 +66,6 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 })
 ```
 
-### Context (Trace, Meta, Delegate)
-
-```go
-// Define your server method
-pattern := MathPattern{ Topic: "math", Cmd: "add" }
-hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
-  fmt.Printf("Context: %+v\n", context)
-  result := Response{Result: req.A + req.B}
-  reply.Send(result)
-})
-
-// Call your server method
-requestPattern := RequestPattern{ Topic: "math", Cmd: "add", A: 1, B: 2 }
-hemera.Act(requestPattern, func(resp *Response, context server.Context) {
-  fmt.Printf("Context: %+v\n", context)
-})
-```
-
 ## TODO
 - [ ] Setup nats server for testing
 - [X] Implement Add and Act
