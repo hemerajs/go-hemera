@@ -61,10 +61,10 @@ func equals(a PatternSet, b PatternSet) bool {
 	return FieldsArrayEquals(a.Fields, b.Fields)
 }
 
-func (r *Router) Lookup(p interface{}) (*PatternSet, error) {
+func (r *Router) Lookup(p interface{}) *PatternSet {
 
 	if len(r.Map) == 0 {
-		return nil, ErrPatternNotFound
+		return nil
 	}
 
 	a := convertToPatternSet(p)
@@ -74,13 +74,13 @@ func (r *Router) Lookup(p interface{}) (*PatternSet, error) {
 			bucket := r.Map[i]
 			for _, pset := range bucket {
 				if equals(a, pset) {
-					return &pset, nil
+					return &pset
 				}
 			}
 		}
 	}
 
-	return nil, ErrPatternNotFound
+	return nil
 
 }
 

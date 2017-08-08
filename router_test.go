@@ -52,11 +52,11 @@ func TestMatchedLookup(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
-	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
 	assert.Equal(p.Callback, "test3", "Should be `test3`")
 
-	p, _ = hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
+	p = hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 
 	assert.Equal(p.Callback, "test4", "Should be `test4`")
 
@@ -68,7 +68,7 @@ func TestMatchedLookupWhenEqualWeight(t *testing.T) {
 	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 
-	p, _ := hr.Lookup(DynPattern{Topic: "math"})
+	p := hr.Lookup(DynPattern{Topic: "math"})
 
 	assert.Equal(p.Callback, "test", "Should be `test`")
 
@@ -81,7 +81,7 @@ func TestMatchedLookupSubset(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
 
-	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
 	assert.Equal(p.Callback, "test", "Should be `test`")
 
@@ -94,7 +94,7 @@ func TestMatchedLookupLast(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
 
-	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 
 	assert.Equal(p.Callback, "test1", "Should be `test`")
 
@@ -109,7 +109,7 @@ func TestMatchedLookupWhenSubset(t *testing.T) {
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 
-	p, _ := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
 	assert.Equal(p.Callback, "test", "Should be `test`")
 
@@ -121,9 +121,9 @@ func TestUnMatchedLookupNoPartialMatchSupport(t *testing.T) {
 	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 
-	_, err := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	assert.Equal(err.Error(), "Pattern not found", "Should pattern not found")
+	assert.Empty(p, "Pattern not found", "Should pattern not found")
 
 }
 
@@ -132,9 +132,9 @@ func TestUnMatchedLookupWhenTreeEmpty(t *testing.T) {
 
 	hr := NewRouter()
 
-	_, err := hr.Lookup(DynPattern{Topic: "math", Cmd: "add222"})
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add222"})
 
-	assert.Equal(err.Error(), "Pattern not found", "Should pattern not found")
+	assert.Empty(p, "Pattern not found", "Should pattern not found")
 
 }
 

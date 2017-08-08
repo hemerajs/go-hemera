@@ -84,6 +84,34 @@ func TestCreateHemera(t *testing.T) {
 
 }
 
+func TestAdd(t *testing.T) {
+	assert := assert.New(t)
+
+	ts := RunServerOnPort(TEST_PORT)
+	defer ts.Shutdown()
+
+	opts := reconnectOpts
+	nc, err := opts.Connect()
+	defer nc.Close()
+
+	if err != nil {
+		panic(err)
+	}
+
+	h, _ := CreateHemera(nc)
+
+	pattern := MathPattern{Topic: "math", Cmd: "add"}
+
+	h.Add(pattern, func(req *RequestPattern, reply Reply, context Context) {
+		reply.Send(Response{Result: req.A + req.B})
+	})
+
+	nc.Flush()
+
+	assert.Equal(h.Router.Len(), 1, "Should be 1")
+
+}
+
 func TestActRequest(t *testing.T) {
 	assert := assert.New(t)
 	ch := make(chan bool)
@@ -123,5 +151,37 @@ func TestActRequest(t *testing.T) {
 	}
 
 	assert.Equal(actResult.Result, 3, "Should be 3")
+
+}
+
+func TestNoDuplicatesAllowed(t *testing.T) {
+	assert := assert.New(t)
+
+	ts := RunServerOnPort(TEST_PORT)
+	defer ts.Shutdown()
+
+	opts := reconnectOpts
+	nc, err := opts.Connect()
+	defer nc.Close()
+
+	if err != nil {
+		panic(err)
+	}
+
+	h, _ := CreateHemera(nc)
+
+	pattern := MathPattern{Topic: "math", Cmd: "add"}
+
+	h.Add(pattern, func(req *RequestPattern, reply Reply, context Context) {
+		reply.Send(Response{Result: req.A + req.B})
+	})
+
+	_, errAdd := h.Add(pattern, func(req *RequestPattern, reply Reply, context Context) {
+		reply.Send(Response{Result: req.A + req.B})
+	})
+
+	nc.Flush()
+
+	assert.Equal(errAdd.Error(), "Pattern is already registered", "Should be not allowed to add duplicate patterns")
 
 }

@@ -30,6 +30,7 @@ var (
 	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least two argument")
 	ErrInvalidActHandlerArguments = errors.New("Act Handler requires at least two argument")
 	ErrPatternNotFound            = errors.New("Pattern not found")
+	ErrDuplicatePattern           = errors.New("Pattern is already registered")
 )
 
 func GetDefaultOptions() Options {
@@ -121,6 +122,12 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 		return nil, ErrInvalidAddHandlerArguments
 	}
 
+	lp := h.Router.Lookup(p)
+
+	if lp != nil {
+		return nil, ErrDuplicatePattern
+	}
+
 	h.Router.Add(p, cb)
 
 	// Response struct
@@ -163,9 +170,9 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 
 	e := oPtr.Elem().Interface()
 
-	p, err := h.Router.Lookup(e)
+	p := h.Router.Lookup(e)
 
-	if err == nil {
+	if p != nil {
 		// Get "Value" of the reply callback for the reflection Call
 		reply := Reply{Pattern: p.Pattern, Reply: m.Reply, Hemera: h}
 
@@ -188,7 +195,7 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 
 		cbValue.Call(oV)
 	} else {
-		log.Fatal(err)
+		log.Fatal(ErrPatternNotFound)
 	}
 }
 
