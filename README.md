@@ -70,5 +70,6 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 - [X] Implement Add and Act
 - [X] Infer Response in Act
 - [X] Create Context (trace, meta, delegate)
+- [ ] Use tree for pattern indexing
 - [ ] Clean request pattern from none primitive values
 - [X] Implement basic pattern matching (router)

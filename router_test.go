@@ -152,3 +152,47 @@ func BenchmarkLookup(b *testing.B) {
 	}
 
 }
+
+func BenchmarkLookup10000(b *testing.B) {
+
+	hr := NewRouter()
+
+	for n := 0; n < 10000; n++ {
+		hr.Add(DynPattern{Topic: "payment"}, "test2")
+		hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
+		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
+		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
+	}
+
+	for n := 0; n < b.N; n++ {
+		hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	}
+
+}
+
+func BenchmarkLookup100000(b *testing.B) {
+
+	hr := NewRouter()
+
+	for n := 0; n < 100000; n++ {
+		hr.Add(DynPattern{Topic: "payment"}, "test2")
+		hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
+		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
+		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
+	}
+
+	for n := 0; n < b.N; n++ {
+		hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	}
+
+}
+
+func BenchmarkAdd(b *testing.B) {
+
+	hr := NewRouter()
+
+	for n := 0; n < b.N; n++ {
+		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test")
+	}
+
+}
