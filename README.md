@@ -71,5 +71,6 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 - [X] Infer Response in Act
 - [X] Create Context (trace, meta, delegate)
 - [ ] Use tree for pattern indexing
+- [ ] Use Msgpack for encoding [msgpack](https://github.com/tinylib/msgp)
 - [ ] Clean request pattern from none primitive values
 - [X] Implement basic pattern matching (router)

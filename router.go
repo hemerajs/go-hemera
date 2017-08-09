@@ -92,6 +92,7 @@ func convertToPatternSet(p interface{}) PatternSet {
 	ps.Pattern = p
 	ps.Weight = 0
 
+	// @TODO: only primitive values
 	for _, field := range fields {
 		if !field.IsZero() {
 			ps.Fields[field.Name()] = field.Value()
