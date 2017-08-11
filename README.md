@@ -13,12 +13,7 @@ JSON is chosen as default protocol.
 ## Install
 
 ```
-go get github.com/nats-io/go-nats
-go get github.com/nats-io/nuid
-go get github.com/fatih/structs
-go get github.com/mitchellh/mapstructure
-// Testing
-go get github.com/stretchr/testify/assert
+go get ./..
 ```
 
 ### Example

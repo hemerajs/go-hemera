@@ -108,7 +108,7 @@ func TestAdd(t *testing.T) {
 
 	nc.Flush()
 
-	assert.Equal(h.Router.Len(), 1, "Should be 1")
+	assert.Equal(len(h.Router.List()), 1, "Should be 1")
 
 }
 

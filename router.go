@@ -1,7 +1,12 @@
 package hemera
 
 import (
+	"math"
+
+	"github.com/emirpasic/gods/maps/hashmap"
+	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/fatih/structs"
+	zheSkiplist "github.com/zhenjl/skiplist"
 )
 
 type PatternField interface{}
@@ -14,23 +19,20 @@ type PatternSet struct {
 	Callback interface{}
 }
 
+type PatternSets []*PatternSet
+
+type Bucket struct {
+	PatternSets *zheSkiplist.Skiplist
+}
+
 type Router struct {
-	Map map[int][]PatternSet
+	Map     *hashmap.Map
+	Buckets []*Bucket
 }
 
 func NewRouter() Router {
-	m := make(map[int][]PatternSet, 10)
-	return Router{Map: m}
-}
-
-func (r *Router) Len() int {
-	total := 0
-	for _, bucket := range r.Map {
-		for range bucket {
-			total++
-		}
-	}
-	return total
+	hm := hashmap.New()
+	return Router{Map: hm}
 }
 
 func (r *Router) Add(args ...interface{}) {
@@ -44,7 +46,51 @@ func (r *Router) Add(args ...interface{}) {
 		ps.Callback = args[1]
 	}
 
-	r.Map[ps.Weight] = append(r.Map[ps.Weight], ps)
+	for key, val := range ps.Fields {
+		if _, ok := r.Map.Get(key); !ok {
+			r.Map.Put(key, hashmap.New())
+		}
+
+		patternField, _ := r.Map.Get(key)
+		patternValueMap := patternField.(*hashmap.Map)
+		patternValueMapValue, ok := patternValueMap.Get(val)
+
+		var bucket *Bucket
+
+		if !ok {
+			bucket = &Bucket{}
+			bucket.PatternSets = zheSkiplist.New(zheSkiplist.BuiltinGreaterThan)
+			r.Buckets = append(r.Buckets, bucket)
+			patternValueMap.Put(val, bucket)
+		} else {
+			bucket = patternValueMapValue.(*Bucket)
+		}
+
+		// Add PatternSet to bucket
+		bucket.PatternSets.Insert(ps.Weight, ps)
+
+	}
+
+}
+
+func (r *Router) List() PatternSets {
+	visited := hashset.New()
+	list := PatternSets{}
+
+	for _, bucket := range r.Buckets {
+		rIter, _ := bucket.PatternSets.SelectRange(math.MaxInt64, 0)
+
+		for rIter.Next() {
+			p, ok := rIter.Value().(*PatternSet)
+
+			if ok && !visited.Contains(p) {
+				visited.Add(p)
+				list = append(list, p)
+			}
+		}
+	}
+
+	return list
 }
 
 func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
@@ -57,26 +103,49 @@ func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
 	return true
 }
 
-func equals(a PatternSet, b PatternSet) bool {
+func equals(a *PatternSet, b *PatternSet) bool {
 	return FieldsArrayEquals(a.Fields, b.Fields)
 }
 
 func (r *Router) Lookup(p interface{}) *PatternSet {
 
-	if len(r.Map) == 0 {
-		return nil
-	}
+	ps := convertToPatternSet(p)
 
-	a := convertToPatternSet(p)
+	for key, val := range ps.Fields {
 
-	for i := a.Weight; i > 0; i-- {
-		if len(r.Map[i]) != 0 {
-			bucket := r.Map[i]
-			for _, pset := range bucket {
-				if equals(a, pset) {
-					return &pset
+		// return e.g value of "topic"
+		patternField, ok := r.Map.Get(key)
+
+		// when patternKey was not indexed
+		if !ok {
+			continue
+		}
+
+		// convert value to hashMap
+		patternValueMap := patternField.(*hashmap.Map)
+
+		// return bucket of e.g "topic" -> "math" -> bucket
+		patternValueMapValue, ok := patternValueMap.Get(val)
+
+		if ok {
+			b, ok := patternValueMapValue.(*Bucket)
+
+			if !ok {
+				continue
+			}
+
+			// search pattern with equal weight or less
+			rIter, _ := b.PatternSets.SelectRange(ps.Weight, 0)
+
+			for rIter.Next() {
+
+				a, ok := rIter.Value().(*PatternSet)
+
+				if ok && equals(ps, a) {
+					return a
 				}
 			}
+
 		}
 	}
 
@@ -84,10 +153,10 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 
 }
 
-func convertToPatternSet(p interface{}) PatternSet {
+func convertToPatternSet(p interface{}) *PatternSet {
 	fields := structs.Fields(p)
 
-	ps := PatternSet{}
+	ps := &PatternSet{}
 	ps.Fields = make(PatternFields, 20)
 	ps.Pattern = p
 	ps.Weight = 0
