@@ -155,10 +155,34 @@ func TestUnMatchedLookupWhenTreeEmpty(t *testing.T) {
 
 }
 
+func BenchmarkLookupWeight7(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouter.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"})
+	}
+
+}
+
+func BenchmarkLookupWeight6(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouter.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"})
+	}
+
+}
+
 func BenchmarkLookupWeight5(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		hrouter.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"})
+	}
+
+}
+
+func BenchmarkLookupWeight3(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouter.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 	}
 
 }
@@ -175,6 +199,20 @@ func BenchmarkLookupWeight1(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		hrouter.Lookup(DynPattern{Topic: "math"})
+	}
+
+}
+
+func BenchmarkList(b *testing.B) {
+	hr := NewRouter()
+
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
+
+	for n := 0; n < b.N; n++ {
+		hr.List()
 	}
 
 }
@@ -202,6 +240,8 @@ func init() {
 		hrouter.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
 		hrouter.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
 		hrouter.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
+		hrouter.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test4")
+		hrouter.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test4")
 		hrouter.Add(DynPattern{Topic: "payment"}, "test2")
 	}
 }
