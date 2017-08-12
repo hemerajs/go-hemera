@@ -1,8 +1,7 @@
 package hemera
 
 import (
-	"fmt"
-	"log"
+	"math"
 
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/sets/hashset"
@@ -10,17 +9,12 @@ import (
 	zheSkiplist "github.com/zhenjl/skiplist"
 )
 
-const (
-	DepthStrategy  = "depth"
-	InsertStrategy = "insert"
-)
-
 type PatternField interface{}
 type PatternFields map[string]PatternField
 
 type PatternSet struct {
 	Pattern  interface{}
-	Weight   int64
+	Weight   int
 	Fields   PatternFields
 	Callback interface{}
 }
@@ -32,25 +26,24 @@ type Bucket struct {
 }
 
 type Router struct {
-	Map      *hashmap.Map
-	Buckets  []*Bucket
-	Strategy string
-	counter  int64
+	Map     *hashmap.Map
+	Buckets []*Bucket
+	cmp     zheSkiplist.Comparator
 }
 
-//NewRouter creaet a new router with indexing strategy
-func NewRouter(strategy string) Router {
+//NewRouter creaet a new router
+func NewRouter() Router {
 	hm := hashmap.New()
-	return Router{Map: hm, Strategy: strategy}
+	return Router{Map: hm, cmp: zheSkiplist.BuiltinGreaterThan}
 }
 
 // Add Insert a new pattern
 func (r *Router) Add(pattern, payload interface{}) {
 	ps := convertToPatternSet(pattern)
-
 	ps.Callback = payload
 
 	for key, val := range ps.Fields {
+		// create map to save key -> value pair
 		if _, ok := r.Map.Get(key); !ok {
 			r.Map.Put(key, hashmap.New())
 		}
@@ -62,30 +55,16 @@ func (r *Router) Add(pattern, payload interface{}) {
 		var bucket *Bucket
 
 		if !ok {
-
-			var cmp zheSkiplist.Comparator
-			if r.Strategy == DepthStrategy {
-				cmp = zheSkiplist.BuiltinGreaterThan
-			} else {
-				cmp = zheSkiplist.BuiltinLessThan
-			}
-
 			bucket = &Bucket{}
-			bucket.PatternSets = zheSkiplist.New(cmp)
+			bucket.PatternSets = zheSkiplist.New(r.cmp)
 			r.Buckets = append(r.Buckets, bucket)
 			patternValueMap.Put(val, bucket)
 		} else {
 			bucket = patternValueMapValue.(*Bucket)
 		}
 
-		if r.Strategy == DepthStrategy {
-			bucket.PatternSets.Insert(ps.Weight, ps)
-		} else {
-			fmt.Printf("Counter: %v", r.counter)
-			bucket.PatternSets.Insert(r.counter, ps)
-			r.counter++
-		}
-
+		// index by weight
+		bucket.PatternSets.Insert(ps.Weight, ps)
 	}
 
 }
@@ -100,14 +79,9 @@ func (r *Router) List() PatternSets {
 		var rIter *zheSkiplist.Iterator
 		var err error
 
-		if r.Strategy == DepthStrategy {
-			rIter, err = bucket.PatternSets.SelectRange(int64(bucket.PatternSets.Count()), int64(0))
-		} else {
-			rIter, err = bucket.PatternSets.SelectRange(int64(0), int64(r.counter))
-		}
+		rIter, err = bucket.PatternSets.SelectRange(math.MaxInt16, 0)
 
 		if err != nil {
-			log.Fatalf("List: No item found in selected range Counter: %v", r.counter)
 			continue
 		}
 
@@ -124,7 +98,7 @@ func (r *Router) List() PatternSets {
 	return list
 }
 
-// FieldsArrayEquals check if a is a subset of b
+// FieldsArrayEquals check if b is subset of a
 func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
 	for key, field := range b {
 		if a[key] != field {
@@ -150,7 +124,7 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 		// return e.g value of "topic"
 		patternField, ok := r.Map.Get(key)
 
-		// when patternKey was not indexed
+		// when key was not indexed
 		if !ok {
 			continue
 		}
@@ -171,31 +145,30 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 			var rIter *zheSkiplist.Iterator
 			var err error
 
-			if r.Strategy == DepthStrategy {
-				rIter, err = b.PatternSets.SelectRange(ps.Weight, int64(0))
-			} else {
-				b.PatternSets.PrintStats()
-				rIter, err = b.PatternSets.SelectRange(int64(0), ps.Weight+1)
-			}
+			rIter, err = b.PatternSets.SelectRange(ps.Weight, 0)
 
+			// no item found in range
 			if err != nil {
-				log.Fatalf("Lookup: No item found in selected range Weight: %v - Counter: %v", ps.Weight, r.counter)
 				continue
 			}
 
 			for rIter.Next() {
-
 				a, ok := rIter.Value().(*PatternSet)
+
+				if !ok {
+					continue
+				}
 
 				var matched bool
 
+				// only subset match
 				if a.Weight >= ps.Weight {
 					matched = equals(a, ps)
 				} else {
 					matched = equals(ps, a)
 				}
 
-				if ok && matched {
+				if matched {
 					return a
 				}
 			}
@@ -212,7 +185,7 @@ func convertToPatternSet(p interface{}) *PatternSet {
 	fields := structs.Fields(p)
 
 	ps := &PatternSet{}
-	ps.Fields = make(PatternFields, 20)
+	ps.Fields = make(PatternFields)
 	ps.Pattern = p
 	ps.Weight = 0
 

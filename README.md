@@ -6,10 +6,6 @@
 
 **Status:** Experimental
 
-## Info
-This client is under development. The first step is to provide the basic RPC functionality. It should be able to define patterns and call them.
-JSON is chosen as default protocol.
-
 ## Install
 
 ```
@@ -60,12 +56,24 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 })
 ```
 
+## Pattern matching
+We implement `depth order` this will match the entry with the most properties first. We can measure this depth by counting the fields of a struct.
+
+```go
+type Foo struct {
+	A int
+	B int
+}
+```
+This struct has a weight of `2`. This information is indexed with [skiplist](http://drum.lib.umd.edu/bitstream/handle/1903/544/CS-TR-2286.1.pdf?sequence=2) structure to ensure that we have an  average O(log k) efficiency.
+
+
+
 ## TODO
 - [X] Setup nats server for testing
 - [X] Implement Add and Act
 - [X] Infer Response in Act
 - [X] Create Context (trace, meta, delegate)
 - [X] Use tree for pattern indexing
-- [ ] Use Msgpack for encoding [msgpack](https://github.com/tinylib/msgp)
 - [ ] Clean request pattern from none primitive values
 - [X] Implement basic pattern matching (router)

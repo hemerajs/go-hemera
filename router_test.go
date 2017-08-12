@@ -9,7 +9,7 @@ import (
 func CreateRouter(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 
 	assert.NotEqual(hr, nil, "they should not nil")
 
@@ -37,8 +37,7 @@ type TestIntPattern struct {
 	B     int
 }
 
-var hrouterDepth = NewRouter(DepthStrategy)
-var hrouterInsert = NewRouter(InsertStrategy)
+var hrouterDepth = NewRouter()
 
 /**
 * Pattern weight order
@@ -47,7 +46,7 @@ var hrouterInsert = NewRouter(InsertStrategy)
 func TestAddPatternDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "dede")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "deded")
 
@@ -58,7 +57,7 @@ func TestAddPatternDepth(t *testing.T) {
 func TestMatchedLookupDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "payment"}, "test2")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
@@ -74,7 +73,7 @@ func TestMatchedLookupDepth(t *testing.T) {
 func TestMatchedLookupWhenEqualWeightDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 
 	p := hr.Lookup(DynPattern{Topic: "math"})
@@ -86,7 +85,7 @@ func TestMatchedLookupWhenEqualWeightDepth(t *testing.T) {
 func TestMatchedLookupSubsetDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
 
@@ -99,7 +98,7 @@ func TestMatchedLookupSubsetDepth(t *testing.T) {
 func TestMatchedLookupNotExistKeyDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test1")
 
@@ -112,7 +111,7 @@ func TestMatchedLookupNotExistKeyDepth(t *testing.T) {
 func TestMatchedLookupLastDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
 
@@ -125,7 +124,7 @@ func TestMatchedLookupLastDepth(t *testing.T) {
 func TestMatchedLookupWhenSubsetDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "payment"}, "test2")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
@@ -140,7 +139,7 @@ func TestMatchedLookupWhenSubsetDepth(t *testing.T) {
 func TestUnMatchedLookupNoPartialMatchSupportDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
@@ -152,7 +151,7 @@ func TestUnMatchedLookupNoPartialMatchSupportDepth(t *testing.T) {
 func TestUnMatchedLookupWhenTreeEmptyDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add222"})
 
@@ -209,7 +208,7 @@ func BenchmarkLookupWeightDepth1(b *testing.B) {
 }
 
 func BenchmarkListDepth(b *testing.B) {
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter()
 
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
@@ -224,199 +223,7 @@ func BenchmarkListDepth(b *testing.B) {
 
 func BenchmarkAddDepth(b *testing.B) {
 
-	hr := NewRouter(DepthStrategy)
-
-	for n := 0; n < b.N; n++ {
-		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test")
-	}
-
-}
-
-/**
-* Insertion order
- */
-
-func TestAddPatternInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "dede")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "deded")
-
-	assert.Equal(len(hr.List()), 2, "Should contain 2 elements")
-
-}
-
-func TestMatchedLookupInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "payment"}, "test2")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-
-	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
-
-	assert.Equal(p.Callback, "test", "Should be `test`")
-
-}
-
-func TestMatchedLookupWhenEqualWeightInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math"}, "test")
-
-	p := hr.Lookup(DynPattern{Topic: "math"})
-
-	assert.Equal(p.Callback, "test", "Should be `test`")
-
-}
-
-func TestMatchedLookupSubsetInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
-
-	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
-
-	assert.Equal(p.Callback, "test", "Should be `test`")
-
-}
-
-func TestMatchedLookupNotExistKeyInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test1")
-
-	p := hr.Lookup(TestIntPattern{Topic: "math", Cmd: "add", A: 1, B: 1})
-
-	assert.Equal(p.Callback, "test", "Should be `test`")
-
-}
-
-func TestMatchedLookupLastInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
-
-	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
-
-	assert.Equal(p.Callback, "test", "Should be `test`")
-
-}
-
-func TestMatchedLookupWhenSubsetInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "payment"}, "test2")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-
-	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
-
-	assert.Equal(p.Callback, "test", "Should be `test`")
-
-}
-
-func TestUnMatchedLookupNoPartialMatchSupportInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-
-	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
-
-	assert.Empty(p, "Pattern not found", "Should pattern not found")
-
-}
-
-func TestUnMatchedLookupWhenTreeEmptyInsert(t *testing.T) {
-	assert := assert.New(t)
-
-	hr := NewRouter(InsertStrategy)
-
-	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add222"})
-
-	assert.Empty(p, "Pattern not found", "Should pattern not found")
-
-}
-
-func BenchmarkLookupWeightInsert7(b *testing.B) {
-
-	for n := 0; n < b.N; n++ {
-		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"})
-	}
-
-}
-
-func BenchmarkLookupWeightInsert6(b *testing.B) {
-
-	for n := 0; n < b.N; n++ {
-		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"})
-	}
-
-}
-
-func BenchmarkLookupWeightInsert5(b *testing.B) {
-
-	for n := 0; n < b.N; n++ {
-		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"})
-	}
-
-}
-
-func BenchmarkLookupWeighInsert3(b *testing.B) {
-
-	for n := 0; n < b.N; n++ {
-		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
-	}
-
-}
-
-func BenchmarkLookupWeightInsert2(b *testing.B) {
-
-	for n := 0; n < b.N; n++ {
-		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add"})
-	}
-
-}
-
-func BenchmarkLookupWeightInsert1(b *testing.B) {
-
-	for n := 0; n < b.N; n++ {
-		hrouterInsert.Lookup(DynPattern{Topic: "math"})
-	}
-
-}
-
-func BenchmarkListInsert(b *testing.B) {
-	hr := NewRouter(InsertStrategy)
-
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-
-	for n := 0; n < b.N; n++ {
-		hr.List()
-	}
-
-}
-
-func BenchmarkAddInsert(b *testing.B) {
-
-	hr := NewRouter(InsertStrategy)
+	hr := NewRouter()
 
 	for n := 0; n < b.N; n++ {
 		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test")
@@ -440,21 +247,5 @@ func init() {
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test4")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test4")
 		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test2")
-	}
-
-	for n := 0; n < 10000; n++ {
-		hrouterInsert.Add(DynPattern{Topic: "payment"}, "test2")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-		hrouterInsert.Add(DynPattern{Topic: "payment"}, "test2")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test4")
-		hrouterInsert.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test4")
-		hrouterInsert.Add(DynPattern{Topic: "payment"}, "test2")
 	}
 }
