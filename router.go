@@ -1,7 +1,7 @@
 package hemera
 
 import (
-	"math"
+	"log"
 
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/sets/hashset"
@@ -9,12 +9,17 @@ import (
 	zheSkiplist "github.com/zhenjl/skiplist"
 )
 
+const (
+	DepthStrategy  = "depth"
+	InsertStrategy = "insert"
+)
+
 type PatternField interface{}
 type PatternFields map[string]PatternField
 
 type PatternSet struct {
 	Pattern  interface{}
-	Weight   int
+	Weight   int64
 	Fields   PatternFields
 	Callback interface{}
 }
@@ -26,25 +31,23 @@ type Bucket struct {
 }
 
 type Router struct {
-	Map     *hashmap.Map
-	Buckets []*Bucket
+	Map      *hashmap.Map
+	Buckets  []*Bucket
+	Strategy string
+	counter  int64
 }
 
-func NewRouter() Router {
+//NewRouter creaet a new router with indexing strategy
+func NewRouter(strategy string) Router {
 	hm := hashmap.New()
-	return Router{Map: hm}
+	return Router{Map: hm, Strategy: strategy}
 }
 
-func (r *Router) Add(args ...interface{}) {
-	if len(args) == 0 {
-		panic("hemera: Requires at least one argument")
-	}
+// Add Insert a new pattern
+func (r *Router) Add(pattern, payload interface{}) {
+	ps := convertToPatternSet(pattern)
 
-	ps := convertToPatternSet(args[0])
-
-	if len(args) == 2 {
-		ps.Callback = args[1]
-	}
+	ps.Callback = payload
 
 	for key, val := range ps.Fields {
 		if _, ok := r.Map.Get(key); !ok {
@@ -58,27 +61,53 @@ func (r *Router) Add(args ...interface{}) {
 		var bucket *Bucket
 
 		if !ok {
+
+			var cmp zheSkiplist.Comparator
+			if r.Strategy == DepthStrategy {
+				cmp = zheSkiplist.BuiltinGreaterThan
+			} else {
+				cmp = zheSkiplist.BuiltinLessThan
+			}
+
 			bucket = &Bucket{}
-			bucket.PatternSets = zheSkiplist.New(zheSkiplist.BuiltinGreaterThan)
+			bucket.PatternSets = zheSkiplist.New(cmp)
 			r.Buckets = append(r.Buckets, bucket)
 			patternValueMap.Put(val, bucket)
 		} else {
 			bucket = patternValueMapValue.(*Bucket)
 		}
 
-		// Add PatternSet to bucket
-		bucket.PatternSets.Insert(ps.Weight, ps)
+		if r.Strategy == DepthStrategy {
+			bucket.PatternSets.Insert(ps.Weight, ps)
+		} else {
+			bucket.PatternSets.Insert(r.counter, ps)
+			r.counter++
+		}
 
 	}
 
 }
 
+// List return all added patterns
 func (r *Router) List() PatternSets {
 	visited := hashset.New()
 	list := PatternSets{}
 
 	for _, bucket := range r.Buckets {
-		rIter, _ := bucket.PatternSets.SelectRange(math.MaxInt64, 0)
+
+		var rIter *zheSkiplist.Iterator
+		var err error
+
+		if r.Strategy == DepthStrategy {
+			rIter, err = bucket.PatternSets.SelectRange(int64(bucket.PatternSets.Count()), int64(0))
+		} else {
+			rIter, err = bucket.PatternSets.SelectRange(int64(0), int64(r.counter))
+		}
+
+		if err != nil {
+			log.Fatalf("List: No item found in selected range Counter: %v", r.counter)
+			continue
+		}
 
 		for rIter.Next() {
 			p, ok := rIter.Value().(*PatternSet)
@@ -93,6 +122,7 @@ func (r *Router) List() PatternSets {
 	return list
 }
 
+// FieldsArrayEquals check if a is a subset of b
 func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
 	for key, field := range b {
 		if a[key] != field {
@@ -103,10 +133,12 @@ func FieldsArrayEquals(a PatternFields, b PatternFields) bool {
 	return true
 }
 
+// equals is shorthand for FieldsArrayEquals
 func equals(a *PatternSet, b *PatternSet) bool {
 	return FieldsArrayEquals(a.Fields, b.Fields)
 }
 
+// Lookup Search for a specific pattern and returns it
 func (r *Router) Lookup(p interface{}) *PatternSet {
 
 	ps := convertToPatternSet(p)
@@ -134,8 +166,19 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 				continue
 			}
 
-			// search pattern with equal weight or less
-			rIter, _ := b.PatternSets.SelectRange(ps.Weight, 0)
+			var rIter *zheSkiplist.Iterator
+			var err error
+
+			if r.Strategy == DepthStrategy {
+				rIter, err = b.PatternSets.SelectRange(ps.Weight, int64(0))
+			} else {
+				rIter, err = b.PatternSets.SelectRange(int64(0), ps.Weight)
+			}
+
+			if err != nil {
+				log.Fatalf("Lookup: No item found in selected range Weight: %v - Counter: %v", ps.Weight, r.counter)
+				continue
+			}
 
 			for rIter.Next() {
 
@@ -153,6 +196,7 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 
 }
 
+// convertToPatternSet convert a struct to a patternset
 func convertToPatternSet(p interface{}) *PatternSet {
 	fields := structs.Fields(p)
 
