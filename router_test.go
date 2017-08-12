@@ -183,6 +183,14 @@ func BenchmarkLookupWeightDepth5(b *testing.B) {
 
 }
 
+func BenchmarkLookupWeightDepth4(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterDepth.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2"})
+	}
+
+}
+
 func BenchmarkLookupWeightDepth3(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
@@ -237,9 +245,6 @@ func init() {
 		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test2")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test2")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
