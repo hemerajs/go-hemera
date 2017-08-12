@@ -13,19 +13,6 @@ go get ./..
 ```
 
 ### Example
-
-## Create connection
-
-```go
-// Connect to NATS
-nc, _ := nats.Connect(nats.DefaultURL)
-
-// Create hemera instance with options
-hemera, _ := server.CreateHemera(nc, server.Timeout(2000), ...)
-```
-
-## Define the pattern
-
 ```go
 
 // Define the pattern of your server method
@@ -41,24 +28,28 @@ type RequestPattern struct {
 	A int `json:"a" mapstructure:"a"`
 	B int `json:"b" mapstructure:"b"`
 }
-```
 
-## Add your methods
+// Define the struct of your response
+type Response struct {
+	Result int `json:"result"`
+}
 
-```go
+// Connect to NATS
+nc, _ := nats.Connect(nats.DefaultURL)
+
+// Create hemera struct with options
+hemera, _ := server.CreateHemera(nc, server.Timeout(2000), ...)
+
+// Define your server method
 pattern := MathPattern{ Topic: "math", Cmd: "add" }
-
 hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
   fmt.Printf("Request: %+v\n", req)
   result := Response{Result: req.A + req.B}
   reply.Send(result)
 })
-```
 
-## Call from anywhere
-```go
+// Call your server method
 requestPattern := RequestPattern{ Topic: "math", Cmd: "add", A: 1, B: 2 }
-
 hemera.Act(requestPattern, func(resp *Response, err server.Error) {
   fmt.Printf("Response: %+v\n", resp)
 })
