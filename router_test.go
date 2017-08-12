@@ -215,16 +215,10 @@ func BenchmarkLookupWeightDepth1(b *testing.B) {
 
 }
 
-func BenchmarkListDepth(b *testing.B) {
-	hr := NewRouter()
-
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
+func BenchmarkListDepth100000(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hr.List()
+		hrouterDepth.List()
 	}
 
 }
@@ -242,15 +236,15 @@ func BenchmarkAddDepth(b *testing.B) {
 func init() {
 
 	for n := 0; n < 10000; n++ {
-		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test2")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test5")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test4")
-		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test2")
+		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test1")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add"}, "test2")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test5")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test4")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test5")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test6")
+		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test7")
+		hrouterDepth.Add(DynPattern{Topic: "order"}, "test1")
 	}
 }
