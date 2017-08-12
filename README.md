@@ -65,7 +65,7 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 ```
 
 ## Pattern matching
-We implement `depth order` this will match the entry with the most properties first. We can measure this depth by counting the fields of a struct.
+We implemented `depth order` this will match the entry with the most properties first. We can measure this depth by counting the fields of a struct.
 
 ```go
 type Foo struct {
