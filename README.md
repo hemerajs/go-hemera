@@ -41,15 +41,24 @@ nc, _ := nats.Connect(nats.DefaultURL)
 hemera, _ := server.CreateHemera(nc, server.Timeout(2000), ...)
 
 // Define your server method
-pattern := MathPattern{ Topic: "math", Cmd: "add" }
+pattern := MathPattern{
+	Topic: "math",
+	Cmd: "add",
+}
+
 hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
-  fmt.Printf("Request: %+v\n", req)
   result := Response{Result: req.A + req.B}
   reply.Send(result)
 })
 
 // Call your server method
-requestPattern := RequestPattern{ Topic: "math", Cmd: "add", A: 1, B: 2 }
+requestPattern := RequestPattern{
+	Topic: "math",
+	Cmd: "add",
+	A: 1,
+	B: 2,
+}
+
 hemera.Act(requestPattern, func(resp *Response, err server.Error) {
   fmt.Printf("Response: %+v\n", resp)
 })
