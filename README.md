@@ -66,6 +66,17 @@ type Foo struct {
 ```
 This struct has a weight of `2`. This information is indexed with a [skiplist](http://drum.lib.umd.edu/bitstream/handle/1903/544/CS-TR-2286.1.pdf?sequence=2) structure to ensure that we have an average O(log k) efficiency.
 
+### Examples
+```
+a: AddPattern{ Topic: "order" }
+b: AddPattern{ Topic: "order", Cmd: "create" }
+c: AddPattern{ Topic: "order", Cmd: "create", Type: 3 }
+
+ActPattern{ Topic: "order", Cmd: "create" } // b Matched
+ActPattern{ Topic: "order" } // a Matched
+ActPattern{ Topic: "order", Type: 3 } // c Matched
+```
+
 ## Benchmark
 Lookup on a dataset with 100000 Pattern
 ```
