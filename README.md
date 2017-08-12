@@ -87,9 +87,9 @@ ActPattern{ Topic: "order", Type: 3 } // c Matched
 ```
 
 ## Benchmark
-`Lookup` on 100000 Pattern
-`List` on 100000 Pattern
-`Add` with struct of depth 4
+- `Lookup` on 100000 Pattern
+- `List` on 100000 Pattern
+- `Add` with struct of depth 4
 ```
 BenchmarkLookupWeightDepth7-4                200           8975320 ns/op
 BenchmarkLookupWeightDepth6-4                200           7874559 ns/op
