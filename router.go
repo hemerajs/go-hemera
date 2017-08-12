@@ -1,6 +1,7 @@
 package hemera
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/emirpasic/gods/maps/hashmap"
@@ -80,6 +81,7 @@ func (r *Router) Add(pattern, payload interface{}) {
 		if r.Strategy == DepthStrategy {
 			bucket.PatternSets.Insert(ps.Weight, ps)
 		} else {
+			fmt.Printf("Counter: %v", r.counter)
 			bucket.PatternSets.Insert(r.counter, ps)
 			r.counter++
 		}
@@ -172,7 +174,8 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 			if r.Strategy == DepthStrategy {
 				rIter, err = b.PatternSets.SelectRange(ps.Weight, int64(0))
 			} else {
-				rIter, err = b.PatternSets.SelectRange(int64(0), ps.Weight)
+				b.PatternSets.PrintStats()
+				rIter, err = b.PatternSets.SelectRange(int64(0), ps.Weight+1)
 			}
 
 			if err != nil {
@@ -184,7 +187,15 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 
 				a, ok := rIter.Value().(*PatternSet)
 
-				if ok && equals(ps, a) {
+				var matched bool
+
+				if a.Weight >= ps.Weight {
+					matched = equals(a, ps)
+				} else {
+					matched = equals(ps, a)
+				}
+
+				if ok && matched {
 					return a
 				}
 			}

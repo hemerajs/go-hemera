@@ -310,7 +310,7 @@ func TestMatchedLookupLastInsert(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 
-	assert.Equal(p.Callback, "test1", "Should be `test1`")
+	assert.Equal(p.Callback, "test", "Should be `test`")
 
 }
 
@@ -355,7 +355,7 @@ func TestUnMatchedLookupWhenTreeEmptyInsert(t *testing.T) {
 func BenchmarkLookupWeightInsert7(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hrouterDepth.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"})
+		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"})
 	}
 
 }
@@ -363,7 +363,7 @@ func BenchmarkLookupWeightInsert7(b *testing.B) {
 func BenchmarkLookupWeightInsert6(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hrouterDepth.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"})
+		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"})
 	}
 
 }
@@ -371,7 +371,7 @@ func BenchmarkLookupWeightInsert6(b *testing.B) {
 func BenchmarkLookupWeightInsert5(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hrouterDepth.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"})
+		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"})
 	}
 
 }
@@ -379,7 +379,7 @@ func BenchmarkLookupWeightInsert5(b *testing.B) {
 func BenchmarkLookupWeighInsert3(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hrouterDepth.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
+		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 	}
 
 }
@@ -387,7 +387,7 @@ func BenchmarkLookupWeighInsert3(b *testing.B) {
 func BenchmarkLookupWeightInsert2(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hrouterDepth.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+		hrouterInsert.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 	}
 
 }
@@ -395,13 +395,13 @@ func BenchmarkLookupWeightInsert2(b *testing.B) {
 func BenchmarkLookupWeightInsert1(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
-		hrouterDepth.Lookup(DynPattern{Topic: "math"})
+		hrouterInsert.Lookup(DynPattern{Topic: "math"})
 	}
 
 }
 
 func BenchmarkListInsert(b *testing.B) {
-	hr := NewRouter(DepthStrategy)
+	hr := NewRouter(InsertStrategy)
 
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test4")
