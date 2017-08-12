@@ -87,17 +87,19 @@ ActPattern{ Topic: "order", Type: 3 } // c Matched
 ```
 
 ## Benchmark
-Lookup on a dataset with 100000 Pattern
+`Lookup` on 100000 Pattern
+`List` on 100000 Pattern
+`Add` with struct of depth 4
 ```
-BenchmarkLookupWeightDepth7-4                200           8430554 ns/op
-BenchmarkLookupWeightDepth6-4                200           7683160 ns/op
-BenchmarkLookupWeightDepth5-4                200           7030294 ns/op
-BenchmarkLookupWeightDepth4-4                200           9502888 ns/op
-BenchmarkLookupWeightDepth3-4                300           3840225 ns/op
-BenchmarkLookupWeightDepth2-4               2000            818048 ns/op
-BenchmarkLookupWeightDepth1-4             300000              6489 ns/op
-BenchmarkListDepth-4                      500000              3900 ns/op
-BenchmarkAddDepth-4                       200000              7778 ns/op
+BenchmarkLookupWeightDepth7-4                200           8975320 ns/op
+BenchmarkLookupWeightDepth6-4                200           7874559 ns/op
+BenchmarkLookupWeightDepth5-4                200          11155812 ns/op
+BenchmarkLookupWeightDepth4-4                100          10660366 ns/op
+BenchmarkLookupWeightDepth3-4                300           3947005 ns/op
+BenchmarkLookupWeightDepth2-4               2000            919453 ns/op
+BenchmarkLookupWeightDepth1-4             300000              6480 ns/op
+BenchmarkListDepth100000-4                    10         112191250 ns/op
+BenchmarkAddDepth-4                       200000              7727 ns/op
 PASS
 ```
 
