@@ -210,12 +210,7 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 	for _, bucket := range buckets {
 		for _, pattern := range bucket.PatternSets {
 
-			// search pattern with most properties
-			if r.IsDeep {
-				matched = equals(ps, pattern)
-			} else { // search pattern with lowest properties
-				matched = equals(ps, pattern)
-			}
+			matched = equals(ps, pattern)
 
 			if matched {
 				return pattern
