@@ -19,7 +19,9 @@ const (
 	// PubsubType represent the request with publish / subscribe semantic
 	PubsubType = "pubsub"
 	// RequestTimeout is the maxiumum act timeout in miliseconds
-	RequestTimeout = 2000
+	RequestTimeout    = 2000
+	DepthIndexing     = true
+	InsertionIndexing = false
 )
 
 var (
@@ -35,7 +37,8 @@ var (
 
 func GetDefaultOptions() Options {
 	opts := Options{
-		Timeout: RequestTimeout,
+		Timeout:          RequestTimeout,
+		IndexingStrategy: false,
 	}
 	return opts
 }
@@ -44,7 +47,8 @@ func GetDefaultOptions() Options {
 type Option func(*Options) error
 
 type Options struct {
-	Timeout time.Duration
+	Timeout          time.Duration
+	IndexingStrategy bool
 }
 
 type Handler interface{}
@@ -86,16 +90,23 @@ func CreateHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
-			return Hemera{Opts: opts, Router: NewRouter(true)}, err
+			return Hemera{Opts: opts, Router: NewRouter(opts.IndexingStrategy)}, err
 		}
 	}
-	return Hemera{Conn: conn, Opts: opts, Router: NewRouter(true)}, nil
+	return Hemera{Conn: conn, Opts: opts, Router: NewRouter(opts.IndexingStrategy)}, nil
 }
 
 // Timeout is an Option to set the timeout for a act request
 func Timeout(t time.Duration) Option {
 	return func(o *Options) error {
 		o.Timeout = t
+		return nil
+	}
+}
+
+func IndexingStrategy(isDeep bool) Option {
+	return func(o *Options) error {
+		o.IndexingStrategy = isDeep
 		return nil
 	}
 }
