@@ -65,7 +65,7 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 ```
 
 ## Pattern matching
-We implemented two indexing startegys
+We implemented two indexing strategys
 - `depth order` match the entry with the most properties first.
 - `insertion order` match the entry with the least properties first.
 
@@ -98,15 +98,24 @@ ActPattern{ Topic: "order", Type: 3 } // a Matched
 - `List` on 10000 Pattern
 - `Add` with struct of depth 4
 ```
-BenchmarkLookupWeightDepth7-4             200000              7338 ns/op
-BenchmarkLookupWeightDepth6-4              10000            140238 ns/op
-BenchmarkLookupWeightDepth5-4               5000            281021 ns/op
-BenchmarkLookupWeightDepth4-4               2000            707323 ns/op
-BenchmarkLookupWeightDepth3-4               2000            532042 ns/op
-BenchmarkLookupWeightDepth2-4               2000            661045 ns/op
-BenchmarkLookupWeightDepth1-4               2000            658550 ns/op
-BenchmarkListDepth100000-4                   500           2522162 ns/op
-BenchmarkAddDepth-4                        10000            128308 ns/op
+BenchmarkLookupWeightDepth7-4             200000              7236 ns/op
+BenchmarkLookupWeightDepth6-4              10000            139158 ns/op
+BenchmarkLookupWeightDepth5-4               5000            281219 ns/op
+BenchmarkLookupWeightDepth4-4               2000            705551 ns/op
+BenchmarkLookupWeightDepth3-4               2000            557297 ns/op
+BenchmarkLookupWeightDepth2-4               2000            690949 ns/op
+BenchmarkLookupWeightDepth1-4               2000            682166 ns/op
+BenchmarkListDepth100000-4                   500           2504608 ns/op
+BenchmarkAddDepth-4                        10000            128326 ns/op
+BenchmarkLookupWeightInsertion7-4         200000              7424 ns/op
+BenchmarkLookupWeightInsertion6-4         200000              7020 ns/op
+BenchmarkLookupWeightInsertion5-4         200000              6845 ns/op
+BenchmarkLookupWeightInsertion4-4         200000              6480 ns/op
+BenchmarkLookupWeightInsertion3-4         200000              6355 ns/op
+BenchmarkLookupWeightInsertion2-4         200000              5895 ns/op
+BenchmarkLookupWeightInsertion1-4           3000            468402 ns/op
+BenchmarkListInsertion100000-4               500           2627245 ns/op
+BenchmarkAddInsertion-4                    10000            734603 ns/op
 PASS
 ```
 

@@ -38,6 +38,7 @@ type TestIntPattern struct {
 }
 
 var hrouterDepth = NewRouter(true)
+var hrouterInsertion = NewRouter(false)
 
 /**
 * Pattern weight order
@@ -174,6 +175,10 @@ func TestUnMatchedLookupWhenTreeEmptyDepth(t *testing.T) {
 
 }
 
+/**
+* Depth
+ */
+
 func BenchmarkLookupWeightDepth7(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
@@ -248,6 +253,84 @@ func BenchmarkAddDepth(b *testing.B) {
 
 }
 
+/**
+* Insertion
+ */
+
+func BenchmarkLookupWeightInsertion7(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"})
+	}
+
+}
+
+func BenchmarkLookupWeightInsertion6(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"})
+	}
+
+}
+
+func BenchmarkLookupWeightInsertion5(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"})
+	}
+
+}
+
+func BenchmarkLookupWeightInsertion4(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2"})
+	}
+
+}
+
+func BenchmarkLookupWeightInsertion3(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
+	}
+
+}
+
+func BenchmarkLookupWeightInsertion2(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+	}
+
+}
+
+func BenchmarkLookupWeightInsertion1(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.Lookup(DynPattern{Topic: "math"})
+	}
+
+}
+
+func BenchmarkListInsertion100000(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		hrouterInsertion.List()
+	}
+
+}
+
+func BenchmarkAddInsertion(b *testing.B) {
+
+	hr := NewRouter(false)
+
+	for n := 0; n < b.N; n++ {
+		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test")
+	}
+
+}
+
 func init() {
 
 	for n := 0; n < 1000; n++ {
@@ -261,5 +344,18 @@ func init() {
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test6")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test7")
 		hrouterDepth.Add(DynPattern{Topic: "order"}, "test1")
+	}
+
+	for n := 0; n < 1000; n++ {
+		hrouterInsertion.Add(DynPattern{Topic: "payment"}, "test1")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add"}, "test2")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test5")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test4")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo"}, "test5")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "dedede"}, "test6")
+		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "2", C: "foo", D: "11", E: "d23"}, "test7")
+		hrouterInsertion.Add(DynPattern{Topic: "order"}, "test1")
 	}
 }
