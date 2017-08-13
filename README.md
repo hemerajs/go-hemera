@@ -67,7 +67,7 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 ## Pattern matching
 We implemented two indexing strategys
 - `depth order` match the entry with the most properties first.
-- `insertion order` match the entry with the least properties first.
+- `insertion order` match the entry with the least properties first. `(default)`
 
 ### Examples
 
