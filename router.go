@@ -13,10 +13,10 @@ type PatternFieldValue interface{}
 type PatternFields map[string]PatternFieldValue
 
 type PatternSet struct {
-	Pattern  interface{}
-	Weight   int
-	Fields   PatternFields
-	Callback interface{}
+	Pattern interface{}
+	Weight  int
+	Fields  PatternFields
+	Payload interface{}
 }
 
 type PatternSets []*PatternSet
@@ -43,7 +43,7 @@ func NewRouter(IsDeep bool) Router {
 // Add Insert a new pattern
 func (r *Router) Add(pattern, payload interface{}) {
 	ps := r.convertToPatternSet(pattern)
-	ps.Callback = payload
+	ps.Payload = payload
 
 	for key, val := range ps.Fields {
 		// create map to save key -> value pair

@@ -178,7 +178,7 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 
 		oReplyPtr := reflect.ValueOf(reply)
 
-		cbValue := reflect.ValueOf(p.Callback)
+		cbValue := reflect.ValueOf(p.Payload)
 
 		// Get "Value" of the reply callback for the reflection Call
 

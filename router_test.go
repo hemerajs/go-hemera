@@ -69,7 +69,7 @@ func TestMatchedLookupDepth(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	assert.Equal(p.Callback, "test3", "Should be `test3`")
+	assert.Equal(p.Payload, "test3", "Should be `test3`")
 
 }
 
@@ -81,7 +81,7 @@ func TestMatchedLookupWhenEqualWeightDepth(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math"})
 
-	assert.Equal(p.Callback, "test", "Should be `test`")
+	assert.Equal(p.Payload, "test", "Should be `test`")
 
 }
 
@@ -94,7 +94,7 @@ func TestDepthSupport(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	assert.Equal(p.Callback, "test1", "Should be `test1`")
+	assert.Equal(p.Payload, "test1", "Should be `test1`")
 
 }
 
@@ -107,7 +107,7 @@ func TestOrderSupport(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	assert.Equal(p.Callback, "test", "Should be `test`")
+	assert.Equal(p.Payload, "test", "Should be `test`")
 
 }
 
@@ -123,7 +123,7 @@ func TestDepthPreserveInsertionOrder(t *testing.T) {
 
 	p := hr.Lookup(TestIntPattern{Topic: "math"})
 
-	assert.Equal(p.Callback, "test1", "Should be `test1`")
+	assert.Equal(p.Payload, "test1", "Should be `test1`")
 
 }
 
@@ -136,7 +136,7 @@ func TestMatchedLookupNotExistKeyDepth(t *testing.T) {
 
 	p := hr.Lookup(TestIntPattern{Topic: "math", Cmd: "add", A: 1, B: 1})
 
-	assert.Equal(p.Callback, "test1", "Should be `test1`")
+	assert.Equal(p.Payload, "test1", "Should be `test1`")
 
 }
 
@@ -149,7 +149,7 @@ func TestMatchedLookupLastDepth(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add", A: "1"})
 
-	assert.Equal(p.Callback, "test1", "Should be `test`")
+	assert.Equal(p.Payload, "test1", "Should be `test`")
 
 }
 
@@ -164,7 +164,7 @@ func TestMatchedLookupWhenSubsetDepth(t *testing.T) {
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
-	assert.Equal(p.Callback, "test", "Should be `test`")
+	assert.Equal(p.Payload, "test", "Should be `test`")
 
 }
 
