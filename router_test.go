@@ -111,6 +111,22 @@ func TestOrderSupport(t *testing.T) {
 
 }
 
+func TestDepthPreserveInsertionOrder(t *testing.T) {
+	assert := assert.New(t)
+
+	o1 := DynPattern{Topic: "math"}
+	o2 := DynPattern{Topic: "math"}
+
+	hr := NewRouter(true)
+	hr.Add(o1, "test1")
+	hr.Add(o2, "test2")
+
+	p := hr.Lookup(TestIntPattern{Topic: "math"})
+
+	assert.Equal(p.Callback, "test1", "Should be `test1`")
+
+}
+
 func TestMatchedLookupNotExistKeyDepth(t *testing.T) {
 	assert := assert.New(t)
 
