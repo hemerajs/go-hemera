@@ -114,7 +114,7 @@ BenchmarkLookupWeightInsertion4-4         200000              6480 ns/op
 BenchmarkLookupWeightInsertion3-4         200000              6355 ns/op
 BenchmarkLookupWeightInsertion2-4         200000              5895 ns/op
 BenchmarkLookupWeightInsertion1-4           3000            468402 ns/op
-BenchmarkListInsertion10000-4                500             2627245 ns/op
+BenchmarkListInsertion10000-4                500            2627245 ns/op
 BenchmarkAddInsertion-4                    10000            734603 ns/op
 PASS
 ```
