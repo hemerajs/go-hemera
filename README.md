@@ -129,6 +129,7 @@ PASS
 - [X] Support indexing by depth order
 - [X] Support indexing by insetion order
 - [ ] Clean request pattern from none primitive values
+- [ ] Implement `remove` method
 - [X] Implement basic pattern matching (router)
 
 ## Credits
