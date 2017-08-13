@@ -65,17 +65,13 @@ hemera.Act(requestPattern, func(resp *Response, err server.Error) {
 ```
 
 ## Pattern matching
-We implemented `depth order` this will match the entry with the most properties first. We can measure this depth by counting the fields of a struct.
-
-```go
-type Foo struct {
-	A int
-	B int
-}
-```
-This struct has a weight of `2`. This information is indexed with a [skiplist](http://drum.lib.umd.edu/bitstream/handle/1903/544/CS-TR-2286.1.pdf?sequence=2) structure to ensure that we have an average O(log k) efficiency.
+We implemented two indexing startegys
+- `depth order` match the entry with the most properties first.
+- `insertion order` match the entry with the least properties first.
 
 ### Examples
+
+#### Depth order
 ```
 a: AddPattern{ Topic: "order" }
 b: AddPattern{ Topic: "order", Cmd: "create" }
@@ -86,20 +82,31 @@ ActPattern{ Topic: "order" } // a Matched
 ActPattern{ Topic: "order", Type: 3 } // c Matched
 ```
 
+#### Insertion order
+```
+a: AddPattern{ Topic: "order" }
+b: AddPattern{ Topic: "order", Cmd: "create" }
+c: AddPattern{ Topic: "order", Cmd: "create", Type: 3 }
+
+ActPattern{ Topic: "order", Cmd: "create" } // a Matched
+ActPattern{ Topic: "order" } // a Matched
+ActPattern{ Topic: "order", Type: 3 } // a Matched
+```
+
 ## Benchmark
-- `Lookup` on 100000 Pattern
-- `List` on 100000 Pattern
+- `Lookup` on 10000 Pattern
+- `List` on 10000 Pattern
 - `Add` with struct of depth 4
 ```
-BenchmarkLookupWeightDepth7-4                200           8975320 ns/op
-BenchmarkLookupWeightDepth6-4                200           7874559 ns/op
-BenchmarkLookupWeightDepth5-4                200          11155812 ns/op
-BenchmarkLookupWeightDepth4-4                100          10660366 ns/op
-BenchmarkLookupWeightDepth3-4                300           3947005 ns/op
-BenchmarkLookupWeightDepth2-4               2000            919453 ns/op
-BenchmarkLookupWeightDepth1-4             300000              6480 ns/op
-BenchmarkListDepth100000-4                    10         112191250 ns/op
-BenchmarkAddDepth-4                       200000              7727 ns/op
+BenchmarkLookupWeightDepth7-4             200000              7338 ns/op
+BenchmarkLookupWeightDepth6-4              10000            140238 ns/op
+BenchmarkLookupWeightDepth5-4               5000            281021 ns/op
+BenchmarkLookupWeightDepth4-4               2000            707323 ns/op
+BenchmarkLookupWeightDepth3-4               2000            532042 ns/op
+BenchmarkLookupWeightDepth2-4               2000            661045 ns/op
+BenchmarkLookupWeightDepth1-4               2000            658550 ns/op
+BenchmarkListDepth100000-4                   500           2522162 ns/op
+BenchmarkAddDepth-4                        10000            128308 ns/op
 PASS
 ```
 
@@ -110,5 +117,11 @@ PASS
 - [X] Infer Response in Act
 - [X] Create Context (trace, meta, delegate)
 - [X] Use tree for pattern indexing
+- [X] Support indexing by depth order
+- [X] Support indexing by insetion order
 - [ ] Clean request pattern from none primitive values
 - [X] Implement basic pattern matching (router)
+
+## Credits
+
+- [Bloomrun](https://github.com/mcollina/bloomrun) the pattern matching library for NodeJs

@@ -2,15 +2,15 @@ package hemera
 
 import (
 	"math"
+	"sort"
 
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/fatih/structs"
-	zheSkiplist "github.com/zhenjl/skiplist"
 )
 
-type PatternField interface{}
-type PatternFields map[string]PatternField
+type PatternFieldValue interface{}
+type PatternFields map[string]PatternFieldValue
 
 type PatternSet struct {
 	Pattern  interface{}
@@ -22,24 +22,27 @@ type PatternSet struct {
 type PatternSets []*PatternSet
 
 type Bucket struct {
-	PatternSets *zheSkiplist.Skiplist
+	PatternSets PatternSets
+	Weight      int
 }
 
 type Router struct {
-	Map     *hashmap.Map
-	Buckets []*Bucket
-	cmp     zheSkiplist.Comparator
+	Map         *hashmap.Map
+	Buckets     []*Bucket
+	IsDeep      bool
+	insertCount int
 }
 
 //NewRouter creaet a new router
-func NewRouter() Router {
+func NewRouter(IsDeep bool) Router {
 	hm := hashmap.New()
-	return Router{Map: hm, cmp: zheSkiplist.BuiltinGreaterThan}
+
+	return Router{Map: hm, IsDeep: IsDeep}
 }
 
 // Add Insert a new pattern
 func (r *Router) Add(pattern, payload interface{}) {
-	ps := convertToPatternSet(pattern)
+	ps := r.convertToPatternSet(pattern)
 	ps.Callback = payload
 
 	for key, val := range ps.Fields {
@@ -55,44 +58,78 @@ func (r *Router) Add(pattern, payload interface{}) {
 		var bucket *Bucket
 
 		if !ok {
+
+			// fmt.Printf("Create bucket Key: '%+v' Value: '%+v'\n", key, val)
 			bucket = &Bucket{}
-			bucket.PatternSets = zheSkiplist.New(r.cmp)
-			r.Buckets = append(r.Buckets, bucket)
+
+			if r.IsDeep {
+				bucket.Weight = 0
+			} else {
+				bucket.Weight = math.MaxInt32
+			}
+
 			patternValueMap.Put(val, bucket)
+
+			r.Buckets = append(r.Buckets, bucket)
 		} else {
 			bucket = patternValueMapValue.(*Bucket)
 		}
 
-		// index by weight
-		bucket.PatternSets.Insert(ps.Weight, ps)
+		if r.IsDeep {
+			if bucket.Weight < ps.Weight {
+				bucket.Weight = ps.Weight
+			}
+		} else {
+			if bucket.Weight > ps.Weight {
+				bucket.Weight = ps.Weight
+			}
+		}
+
+		// pattern to bucket
+		bucket.PatternSets = append(bucket.PatternSets, ps)
+
+		//sort buckets of pattern
+		if r.IsDeep {
+			sort.Slice(bucket.PatternSets, func(i int, j int) bool {
+				return bucket.PatternSets[i].Weight > bucket.PatternSets[j].Weight
+			})
+		} else {
+			sort.Slice(bucket.PatternSets, func(i int, j int) bool {
+				return bucket.PatternSets[i].Weight < bucket.PatternSets[j].Weight
+			})
+		}
 	}
 
 }
 
-// List return all added patterns
 func (r *Router) List() PatternSets {
-	visited := hashset.New()
 	list := PatternSets{}
+	visited := hashset.New()
 
-	for _, bucket := range r.Buckets {
+	for _, key := range r.Map.Keys() {
 
-		var rIter *zheSkiplist.Iterator
-		var err error
+		val, _ := r.Map.Get(key)
+		pv := val.(*hashmap.Map)
 
-		rIter, err = bucket.PatternSets.SelectRange(math.MaxInt16, 0)
+		for _, o := range pv.Keys() {
 
-		if err != nil {
-			continue
-		}
+			b, ok := pv.Get(o)
 
-		for rIter.Next() {
-			p, ok := rIter.Value().(*PatternSet)
+			if ok {
+				ps := b.(*Bucket)
 
-			if ok && !visited.Contains(p) {
-				visited.Add(p)
-				list = append(list, p)
+				for _, p := range ps.PatternSets {
+
+					if !visited.Contains(p) {
+						visited.Add(p)
+						list = append(list, p)
+					}
+
+				}
 			}
+
 		}
+
 	}
 
 	return list
@@ -117,7 +154,9 @@ func equals(a *PatternSet, b *PatternSet) bool {
 // Lookup Search for a specific pattern and returns it
 func (r *Router) Lookup(p interface{}) *PatternSet {
 
-	ps := convertToPatternSet(p)
+	ps := r.convertToPatternSet(p)
+
+	buckets := []*Bucket{}
 
 	for key, val := range ps.Fields {
 
@@ -139,38 +178,47 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 			b, ok := patternValueMapValue.(*Bucket)
 
 			if !ok {
-				continue
+				panic("Value is not from type *Bucket")
 			}
 
-			var rIter *zheSkiplist.Iterator
-			var err error
+			buckets = append(buckets, b)
 
-			rIter, err = b.PatternSets.SelectRange(ps.Weight, 0)
-
-			// no item found in range
-			if err != nil {
-				continue
+			//sort buckets
+			if r.IsDeep {
+				sort.Slice(buckets, func(i int, j int) bool {
+					return buckets[i].Weight > buckets[j].Weight
+				})
+			} else {
+				sort.Slice(buckets, func(i int, j int) bool {
+					return buckets[i].Weight < buckets[j].Weight
+				})
 			}
 
-			for rIter.Next() {
-				a, ok := rIter.Value().(*PatternSet)
+		}
+	}
 
-				if !ok {
-					continue
-				}
+	/* for _, x := range buckets {
+		fmt.Printf("Bucket %+v\n", x)
+		for _, p := range x.PatternSets {
+			fmt.Printf("		Set: %+v\n", p)
+		}
 
-				var matched bool
+	} */
 
-				// only subset match
-				if a.Weight >= ps.Weight {
-					matched = equals(a, ps)
-				} else {
-					matched = equals(ps, a)
-				}
+	var matched bool
 
-				if matched {
-					return a
-				}
+	for _, bucket := range buckets {
+		for _, pattern := range bucket.PatternSets {
+
+			// search pattern with most properties
+			if r.IsDeep {
+				matched = equals(ps, pattern)
+			} else { // search pattern with lowest properties
+				matched = equals(ps, pattern)
+			}
+
+			if matched {
+				return pattern
 			}
 
 		}
@@ -181,7 +229,7 @@ func (r *Router) Lookup(p interface{}) *PatternSet {
 }
 
 // convertToPatternSet convert a struct to a patternset
-func convertToPatternSet(p interface{}) *PatternSet {
+func (r *Router) convertToPatternSet(p interface{}) *PatternSet {
 	fields := structs.Fields(p)
 
 	ps := &PatternSet{}
@@ -195,6 +243,12 @@ func convertToPatternSet(p interface{}) *PatternSet {
 			ps.Fields[field.Name()] = field.Value()
 			ps.Weight++
 		}
+	}
+
+	// sort by insertion order
+	if !r.IsDeep {
+		r.insertCount++
+		ps.Weight = r.insertCount
 	}
 
 	return ps

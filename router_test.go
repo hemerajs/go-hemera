@@ -9,7 +9,7 @@ import (
 func CreateRouter(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 
 	assert.NotEqual(hr, nil, "they should not nil")
 
@@ -37,7 +37,7 @@ type TestIntPattern struct {
 	B     int
 }
 
-var hrouterDepth = NewRouter()
+var hrouterDepth = NewRouter(true)
 
 /**
 * Pattern weight order
@@ -46,18 +46,20 @@ var hrouterDepth = NewRouter()
 func TestAddPatternDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "dede")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "deded")
+	hr.Add(DynPattern{Topic: "payment", Cmd: "add"}, "deded")
+	hr.Add(DynPattern{Topic: "payment", Cmd: "add", A: "2"}, "deded")
 
-	assert.Equal(len(hr.List()), 2, "Should contain 2 elements")
+	assert.Equal(len(hr.List()), 4, "Should contain 4 pattern")
 
 }
 
 func TestMatchedLookupDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "payment"}, "test2")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test3")
@@ -73,7 +75,7 @@ func TestMatchedLookupDepth(t *testing.T) {
 func TestMatchedLookupWhenEqualWeightDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math"}, "test")
 
 	p := hr.Lookup(DynPattern{Topic: "math"})
@@ -82,12 +84,25 @@ func TestMatchedLookupWhenEqualWeightDepth(t *testing.T) {
 
 }
 
-func TestMatchedLookupSubsetDepth(t *testing.T) {
+func TestDepthSupport(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math"}, "test")
-	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test1")
+
+	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
+
+	assert.Equal(p.Callback, "test1", "Should be `test1`")
+
+}
+
+func TestOrderSupport(t *testing.T) {
+	assert := assert.New(t)
+
+	hr := NewRouter(false)
+	hr.Add(DynPattern{Topic: "math"}, "test")
+	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test1")
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
 
@@ -98,7 +113,7 @@ func TestMatchedLookupSubsetDepth(t *testing.T) {
 func TestMatchedLookupNotExistKeyDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add"}, "test1")
 
@@ -111,7 +126,7 @@ func TestMatchedLookupNotExistKeyDepth(t *testing.T) {
 func TestMatchedLookupLastDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test1")
 
@@ -124,7 +139,7 @@ func TestMatchedLookupLastDepth(t *testing.T) {
 func TestMatchedLookupWhenSubsetDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math"}, "test")
 	hr.Add(DynPattern{Topic: "payment"}, "test2")
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
@@ -139,7 +154,7 @@ func TestMatchedLookupWhenSubsetDepth(t *testing.T) {
 func TestUnMatchedLookupNoPartialMatchSupportDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 	hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test4")
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add"})
@@ -151,7 +166,7 @@ func TestUnMatchedLookupNoPartialMatchSupportDepth(t *testing.T) {
 func TestUnMatchedLookupWhenTreeEmptyDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 
 	p := hr.Lookup(DynPattern{Topic: "math", Cmd: "add222"})
 
@@ -225,7 +240,7 @@ func BenchmarkListDepth100000(b *testing.B) {
 
 func BenchmarkAddDepth(b *testing.B) {
 
-	hr := NewRouter()
+	hr := NewRouter(true)
 
 	for n := 0; n < b.N; n++ {
 		hr.Add(DynPattern{Topic: "math", Cmd: "add", A: "1", B: "1"}, "test")
@@ -235,7 +250,7 @@ func BenchmarkAddDepth(b *testing.B) {
 
 func init() {
 
-	for n := 0; n < 10000; n++ {
+	for n := 0; n < 1000; n++ {
 		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test1")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add"}, "test2")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")

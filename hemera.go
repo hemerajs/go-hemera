@@ -86,10 +86,10 @@ func CreateHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
-			return Hemera{Opts: opts, Router: NewRouter()}, err
+			return Hemera{Opts: opts, Router: NewRouter(true)}, err
 		}
 	}
-	return Hemera{Conn: conn, Opts: opts, Router: NewRouter()}, nil
+	return Hemera{Conn: conn, Opts: opts, Router: NewRouter(true)}, nil
 }
 
 // Timeout is an Option to set the timeout for a act request
