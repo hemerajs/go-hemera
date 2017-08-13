@@ -235,7 +235,7 @@ func BenchmarkLookupWeightDepth1(b *testing.B) {
 
 }
 
-func BenchmarkListDepth100000(b *testing.B) {
+func BenchmarkListDepth10000(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		hrouterDepth.List()
