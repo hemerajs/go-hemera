@@ -8,12 +8,15 @@ import (
 type Reply struct {
 	Hemera  *Hemera
 	Pattern interface{}
+	Context *Context
 	Reply   string
 }
 
 func (r *Reply) Send(payload interface{}) {
 	response := packet{
 		Pattern: r.Pattern,
+		Meta:    r.Context.Meta,
+		Trace:   r.Context.Trace,
 		Request: request{
 			ID:          nuid.Next(),
 			RequestType: RequestType,
@@ -28,9 +31,6 @@ func (r *Reply) Send(payload interface{}) {
 		response.Result = payload
 	}
 
-	// Encode to JSON
 	data, _ := jsoniter.Marshal(&response)
-
-	// Send
 	r.Hemera.Conn.Publish(r.Reply, data)
 }

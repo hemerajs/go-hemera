@@ -1,5 +1,4 @@
 // +build ignore
-
 package main
 
 import (
@@ -40,7 +39,7 @@ func main() {
 
 	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
-	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
+	hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context *server.Context) {
 		fmt.Printf("Request: %+v\n", req)
 		result := Response{Result: req.A + req.B}
 		reply.Send(result)
@@ -56,9 +55,10 @@ func main() {
 	}
 
 	res := &Response{}
-	hemera.Act(requestPattern, res)
+	ctx := hemera.Act(requestPattern, res)
 
-	log.Printf("Response %v", res)
+	log.Printf("Response context: %+v\n", ctx)
+	log.Printf("Response payload: %+v\n", res)
 
 	runtime.Goexit()
 }

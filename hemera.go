@@ -173,14 +173,14 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 	// decoding hemera packet
 	jsoniter.Unmarshal(m.Data, &pack)
 
-	context := Context{Trace: pack.Trace, Meta: pack.Meta, Delegate: pack.Delegate}
+	context := &Context{Trace: pack.Trace, Meta: pack.Meta, Delegate: pack.Delegate}
 
 	oContextPtr := reflect.ValueOf(context)
 
 	// Pattern is the request
 	o := pack.Pattern
 
-	// return the value of oPtr as interface {}
+	// return the value of oPtr as an interface{}
 	oi := oPtr.Interface()
 
 	// Decode map to struct
@@ -196,10 +196,14 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 
 	if p != nil {
 		// Get "Value" of the reply callback for the reflection Call
-		reply := Reply{Pattern: p.Pattern, Reply: m.Reply, Hemera: h}
+		reply := Reply{
+			Context: context,
+			Pattern: p.Pattern,
+			Reply:   m.Reply,
+			Hemera:  h,
+		}
 
 		oReplyPtr := reflect.ValueOf(reply)
-
 		cbValue := reflect.ValueOf(p.Payload)
 
 		// Get "Value" of the reply callback for the reflection Call
