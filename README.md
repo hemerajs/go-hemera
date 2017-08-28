@@ -65,7 +65,10 @@ requestPattern := RequestPattern{
 }
 
 res := &Response{} // Pointer to struct
-hemera.Act(requestPattern, res)
+ctx := hemera.Act(requestPattern, res)
+
+res = &Response{}
+ctx = hemera.Act(requestPattern, res, ctx)
 
 log.Printf("Response %+v", res)
 ```
