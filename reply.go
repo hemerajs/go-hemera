@@ -1,8 +1,7 @@
 package hemera
 
 import (
-	"encoding/json"
-
+	"github.com/json-iterator/go"
 	"github.com/nats-io/nuid"
 )
 
@@ -30,7 +29,7 @@ func (r *Reply) Send(payload interface{}) {
 	}
 
 	// Encode to JSON
-	data, _ := json.Marshal(&response)
+	data, _ := jsoniter.Marshal(&response)
 
 	// Send
 	r.Hemera.Conn.Publish(r.Reply, data)

@@ -1,7 +1,6 @@
 package hemera
 
 import (
-	"encoding/json"
 	"errors"
 	"log"
 	"reflect"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/hemerajs/go-hemera/router"
+	"github.com/json-iterator/go"
 	"github.com/mitchellh/mapstructure"
 	nats "github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
@@ -161,7 +161,7 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 	pack := packet{}
 
 	// decoding hemera packet
-	json.Unmarshal(m.Data, &pack)
+	jsoniter.Unmarshal(m.Data, &pack)
 
 	context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
 
@@ -268,7 +268,7 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 		},
 	}
 
-	data, _ := json.Marshal(&request)
+	data, _ := jsoniter.Marshal(&request)
 	m, err := h.Conn.Request(topic, data, h.Opts.Timeout*time.Millisecond)
 
 	if err != nil {
@@ -277,7 +277,7 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 	}
 
 	pack := packet{}
-	mErr := json.Unmarshal(m.Data, &pack)
+	mErr := jsoniter.Unmarshal(m.Data, &pack)
 
 	if mErr != nil {
 		log.Fatal(mErr)
