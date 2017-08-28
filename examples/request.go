@@ -53,18 +53,10 @@ func main() {
 	})
 
 	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
-	
-	hemera.Act(requestPattern, func(resp *Response, err server.Error, context server.Context) {
-		fmt.Printf("Response: %+v\n", resp)
-	})
+	res := &Response{}
+	hemera.Act(requestPattern, res)
 
-	nc.Flush()
-
-	if err := nc.LastError(); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Listening on \n")
+	log.Printf("Response %v", res)
 
 	runtime.Goexit()
 }

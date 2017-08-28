@@ -113,10 +113,6 @@ func TestAdd(t *testing.T) {
 }
 
 func TestActRequest(t *testing.T) {
-	assert := assert.New(t)
-	ch := make(chan bool)
-	actResult := &Response{}
-
 	ts := RunServerOnPort(TEST_PORT)
 	defer ts.Shutdown()
 
@@ -139,18 +135,12 @@ func TestActRequest(t *testing.T) {
 	nc.Flush()
 
 	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
-	go h.Act(requestPattern, func(resp *Response, err Error, context Context) {
-		actResult = resp
-		ch <- true
-	})
+	res := &Response{}
+	h.Act(requestPattern, res)
 
 	nc.Flush()
 
-	if err := Wait(ch); err != nil {
-		t.Fatal("Did not receive our message")
-	}
-
-	assert.Equal(actResult.Result, 3, "Should be 3")
+	assert.Equal(t, res.Result, 3, "Should be 3")
 
 }
 
@@ -182,6 +172,6 @@ func TestNoDuplicatesAllowed(t *testing.T) {
 
 	nc.Flush()
 
-	assert.Equal(errAdd.Error(), "Pattern is already registered", "Should be not allowed to add duplicate patterns")
+	assert.Equal(errAdd.Message, "Pattern is already registered", "Should be not allowed to add duplicate patterns")
 
 }

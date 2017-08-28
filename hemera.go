@@ -1,7 +1,6 @@
 package hemera
 
 import (
-	"errors"
 	"log"
 	"reflect"
 	"time"
@@ -26,14 +25,14 @@ const (
 )
 
 var (
-	ErrAddTopicRequired           = errors.New("Topic is required")
-	ErrActTopicRequired           = errors.New("Topic is required")
-	ErrInvalidTopicType           = errors.New("Topic must be from type string")
-	ErrInvalidMapping             = errors.New("Map could not be mapped to struct")
-	ErrInvalidAddHandlerArguments = errors.New("Add Handler requires at least two argument")
-	ErrInvalidActHandlerArguments = errors.New("Act Handler requires at least two argument")
-	ErrPatternNotFound            = errors.New("Pattern not found")
-	ErrDuplicatePattern           = errors.New("Pattern is already registered")
+	ErrAddTopicRequired           = "Topic is required"
+	ErrActTopicRequired           = "Topic is required"
+	ErrInvalidTopicType           = "Topic must be from type string"
+	ErrInvalidMapping             = "Map could not be mapped to struct"
+	ErrInvalidAddHandlerArguments = "Add Handler requires at least two argument"
+	ErrInvalidActHandlerArguments = "Act Handler requires at least two argument"
+	ErrPatternNotFound            = "Pattern not found"
+	ErrDuplicatePattern           = "Pattern is already registered"
 )
 
 func GetDefaultOptions() Options {
@@ -113,31 +112,31 @@ func IndexingStrategy(isDeep bool) Option {
 }
 
 // Add is a method to subscribe on a specific topic
-func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
+func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, *Error) {
 	s := structs.New(p)
 	f := s.Field("Topic")
 
 	if f.IsZero() {
-		return nil, ErrAddTopicRequired
+		return nil, &Error{Message: ErrAddTopicRequired}
 	}
 
 	topic, ok := f.Value().(string)
 
 	if !ok {
-		return nil, ErrInvalidTopicType
+		return nil, &Error{Message: ErrInvalidTopicType}
 	}
 
 	// Get the types of the Add handler args
 	argTypes, numArgs := ArgInfo(cb)
 
 	if numArgs < 2 {
-		return nil, ErrInvalidAddHandlerArguments
+		return nil, &Error{Message: ErrInvalidAddHandlerArguments}
 	}
 
 	lp := h.Router.Lookup(p)
 
 	if lp != nil {
-		return nil, ErrDuplicatePattern
+		return nil, &Error{Message: ErrDuplicatePattern}
 	}
 
 	h.Router.Add(p, cb)
@@ -145,9 +144,15 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	// Response struct
 	argMsgType := argTypes[0]
 
-	return h.Conn.QueueSubscribe(topic, topic, func(m *nats.Msg) {
+	sub, err := h.Conn.QueueSubscribe(topic, topic, func(m *nats.Msg) {
 		h.callAddAction(topic, m, argMsgType, numArgs)
 	})
+
+	if err != nil {
+		return nil, &Error{Message: err.Error()}
+	}
+
+	return sub, nil
 }
 
 func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Type, numArgs int) {
@@ -212,19 +217,23 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 }
 
 // Act is a method to send a message to a NATS subscriber which the specific topic
-func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
+func (h *Hemera) Act(p interface{}, out interface{}) *Context {
+
+	context := &Context{}
 
 	s := structs.New(p)
 	topicField := s.Field("Topic")
 
 	if topicField.IsZero() {
-		return false, ErrActTopicRequired
+		context.Error = &Error{Message: ErrActTopicRequired}
+		return context
 	}
 
 	topic, ok := topicField.Value().(string)
 
 	if !ok {
-		return false, ErrInvalidTopicType
+		context.Error = &Error{Message: ErrInvalidTopicType}
+		return context
 	}
 
 	var metaField interface{}
@@ -235,24 +244,6 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 	var delegateField interface{}
 	if field, ok := s.FieldOk("Delegate_"); ok {
 		delegateField = field.Value()
-	}
-
-	argTypes, numArgs := ArgInfo(cb)
-
-	if numArgs < 2 {
-		return false, ErrInvalidActHandlerArguments
-	}
-
-	// Response struct
-	argMsgType := argTypes[0]
-
-	cbValue := reflect.ValueOf(cb)
-
-	var oPtr reflect.Value
-	if argMsgType.Kind() != reflect.Ptr {
-		oPtr = reflect.New(argMsgType)
-	} else {
-		oPtr = reflect.New(argMsgType.Elem())
 	}
 
 	request := packet{
@@ -273,7 +264,8 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 
 	if err != nil {
 		log.Fatal(err)
-		return false, err
+		context.Error = &Error{Message: err.Error()}
+		return context
 	}
 
 	pack := packet{}
@@ -281,66 +273,35 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 
 	if mErr != nil {
 		log.Fatal(mErr)
-		return false, err
+		context.Error = &Error{Message: mErr.Error()}
+		return context
 	}
 
-	// return the value of oPtr as interface {}
-	oi := oPtr.Interface()
+	errResMap := mapstructure.Decode(pack.Result, out)
 
-	// Pattern is the request
-	o := pack.Result
-
-	// Decode result map to struct
-	errResultMap := mapstructure.Decode(o, oi)
-
-	if errResultMap != nil {
-		panic(errResultMap)
+	if errResMap != nil {
+		panic(errResMap)
 	}
 
-	// Get "Value" of the reply callback for the reflection Call
-	oPtr = reflect.ValueOf(oi)
-
-	errMsg := pack.Error
+	responseError := pack.Error
 
 	// create container for error
-	errorMsg := Error{}
+	errorMsg := &Error{}
 
-	if errMsg != nil {
+	if responseError != nil {
 		// Decode error map to struct
-		errErrMap := mapstructure.Decode(errMsg, &errorMsg)
+		errErrMap := mapstructure.Decode(responseError, &errorMsg)
 
 		if errErrMap != nil {
 			panic(errErrMap)
 		}
 	}
 
-	context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
+	context.Meta = pack.Meta
+	context.Delegate = pack.Delegate
+	context.Trace = pack.Trace
 
-	oContextPtr := reflect.ValueOf(context)
-
-	if pack.Error != nil {
-		errVal := reflect.ValueOf(errorMsg)
-
-		var argValues []reflect.Value
-		if numArgs == 2 {
-			argValues = []reflect.Value{oPtr, errVal}
-		} else {
-			argValues = []reflect.Value{oPtr, errVal, oContextPtr}
-		}
-		cbValue.Call(argValues)
-	} else {
-		errVal := reflect.ValueOf(errorMsg)
-
-		var argValues []reflect.Value
-		if numArgs == 2 {
-			argValues = []reflect.Value{oPtr, errVal}
-		} else {
-			argValues = []reflect.Value{oPtr, errVal, oContextPtr}
-		}
-		cbValue.Call(argValues)
-	}
-
-	return true, nil
+	return context
 }
 
 // Dissect the cb Handler's signature

@@ -39,12 +39,6 @@ func main() {
 		reply.Send(req.A + req.B)
 	})
 
-	nc.Flush()
-
-	if err := nc.LastError(); err != nil {
-		log.Fatal(err)
-	}
-
 	log.Printf("Listening on \n")
 
 	runtime.Goexit()
