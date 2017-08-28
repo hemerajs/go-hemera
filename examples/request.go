@@ -56,10 +56,9 @@ func main() {
 	}
 
 	res := &Response{}
-	ctx := hemera.Act(requestPattern, res)
+	hemera.Act(requestPattern, res)
 
-	log.Printf("Response context: %+v\n", ctx)
-	log.Printf("Response payload: %+v\n", res)
+	fmt.Printf("Response %+v", res)
 
 	runtime.Goexit()
 }

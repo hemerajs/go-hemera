@@ -1,7 +1,6 @@
 package hemera
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"time"
@@ -23,17 +22,6 @@ const (
 	RequestTimeout    = 2000
 	DepthIndexing     = true
 	InsertionIndexing = false
-)
-
-var (
-	ErrAddTopicRequired           = "Topic is required"
-	ErrActTopicRequired           = "Topic is required"
-	ErrInvalidTopicType           = "Topic must be from type string"
-	ErrInvalidMapping             = "Map could not be mapped to struct"
-	ErrInvalidAddHandlerArguments = "Add Handler requires at least two argument"
-	ErrInvalidActHandlerArguments = "Act Handler requires at least two argument"
-	ErrPatternNotFound            = "Pattern not found"
-	ErrDuplicatePattern           = "Pattern is already registered"
 )
 
 func GetDefaultOptions() Options {
@@ -116,31 +104,31 @@ func IndexingStrategy(isDeep bool) Option {
 }
 
 // Add is a method to subscribe on a specific topic
-func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, *Error) {
+func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, error) {
 	s := structs.New(p)
 	f := s.Field("Topic")
 
 	if f.IsZero() {
-		return nil, &Error{Message: ErrAddTopicRequired}
+		return nil, NewErrorSimple("add: topic is required")
 	}
 
 	topic, ok := f.Value().(string)
 
 	if !ok {
-		return nil, &Error{Message: ErrInvalidTopicType}
+		return nil, NewErrorSimple("add: topic must be from type string")
 	}
 
 	// Get the types of the Add handler args
 	argTypes, numArgs := ArgInfo(cb)
 
 	if numArgs < 2 {
-		return nil, &Error{Message: ErrInvalidAddHandlerArguments}
+		return nil, NewErrorSimple("add: invalid add handler arguments")
 	}
 
 	lp := h.Router.Lookup(p)
 
 	if lp != nil {
-		return nil, &Error{Message: ErrDuplicatePattern}
+		return nil, NewErrorSimple("add: duplicate pattern")
 	}
 
 	h.Router.Add(p, cb)
@@ -153,7 +141,7 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, *Error) {
 	})
 
 	if err != nil {
-		return nil, &Error{Message: err.Error()}
+		return nil, err
 	}
 
 	return sub, nil
@@ -221,38 +209,57 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 
 		cbValue.Call(oV)
 	} else {
-		log.Fatal(ErrPatternNotFound)
+		log.Fatal(NewErrorSimple("act: pattern could not be found"))
 	}
 }
 
 // Act is a method to send a message to a NATS subscriber which the specific topic
-func (h *Hemera) Act(p interface{}, out interface{}) *Context {
-
+func (h *Hemera) Act(args ...interface{}) *Context {
 	context := &Context{}
+
+	if len(args) < 2 {
+		context.Error = NewErrorSimple("act: invalid count of arguments")
+		return context
+	}
+
+	p := args[0]
+	out := args[1]
+
+	var ctx *Context
+
+	if len(args) == 3 {
+		ctx = args[2].(*Context)
+	}
 
 	s := structs.New(p)
 	topicField := s.Field("Topic")
 
 	if topicField.IsZero() {
-		context.Error = &Error{Message: ErrActTopicRequired}
+		context.Error = NewErrorSimple("act: topic is required")
 		return context
 	}
 
 	topic, ok := topicField.Value().(string)
 
 	if !ok {
-		context.Error = &Error{Message: ErrInvalidTopicType}
+		context.Error = NewErrorSimple("act: topic must be from type string")
 		return context
 	}
 
 	var metaField Meta
-	if field, ok := s.FieldOk("Meta"); ok {
-		metaField = field.Value().(Meta)
-	}
-
 	var delegateField Delegate
-	if field, ok := s.FieldOk("Delegate"); ok {
-		delegateField = field.Value().(Delegate)
+
+	if ctx == nil {
+		if field, ok := s.FieldOk("Meta"); ok {
+			metaField = field.Value().(Meta)
+		}
+
+		if field, ok := s.FieldOk("Delegate"); ok {
+			delegateField = field.Value().(Delegate)
+		}
+	} else {
+		metaField = ctx.Meta
+		delegateField = ctx.Delegate
 	}
 
 	request := packet{
@@ -268,14 +275,13 @@ func (h *Hemera) Act(p interface{}, out interface{}) *Context {
 		},
 	}
 
-	fmt.Println(request.Pattern)
+	data, err := jsoniter.Marshal(&request)
 
-	data, _ := jsoniter.Marshal(&request)
 	m, err := h.Conn.Request(topic, data, h.Opts.Timeout*time.Millisecond)
 
 	if err != nil {
 		log.Fatal(err)
-		context.Error = &Error{Message: err.Error()}
+		context.Error = err
 		return context
 	}
 
@@ -284,7 +290,7 @@ func (h *Hemera) Act(p interface{}, out interface{}) *Context {
 
 	if mErr != nil {
 		log.Fatal(mErr)
-		context.Error = &Error{Message: mErr.Error()}
+		context.Error = mErr
 		return context
 	}
 
@@ -301,7 +307,7 @@ func (h *Hemera) Act(p interface{}, out interface{}) *Context {
 
 	if responseError != nil {
 		// Decode error map to struct
-		errErrMap := mapstructure.Decode(responseError, &errorMsg)
+		errErrMap := mapstructure.Decode(responseError, errorMsg)
 
 		if errErrMap != nil {
 			panic(errErrMap)
@@ -320,7 +326,7 @@ func ArgInfo(cb Handler) ([]reflect.Type, int) {
 	cbType := reflect.TypeOf(cb)
 
 	if cbType.Kind() != reflect.Func {
-		panic("hemera: Handler needs to be a func")
+		panic("hemera: handler needs to be a func")
 	}
 
 	numArgs := cbType.NumIn()

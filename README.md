@@ -67,7 +67,7 @@ requestPattern := RequestPattern{
 res := &Response{} // Pointer to struct
 hemera.Act(requestPattern, res)
 
-log.Printf("Response %v", res)
+log.Printf("Response %+v", res)
 ```
 
 ## Pattern matching
