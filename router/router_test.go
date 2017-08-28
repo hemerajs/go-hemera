@@ -349,7 +349,7 @@ func BenchmarkAddInsertion(b *testing.B) {
 
 func init() {
 
-	for n := 0; n < 1000; n++ {
+	for n := 0; n < 100; n++ {
 		hrouterDepth.Add(DynPattern{Topic: "payment"}, "test1")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add"}, "test2")
 		hrouterDepth.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")
@@ -362,7 +362,7 @@ func init() {
 		hrouterDepth.Add(DynPattern{Topic: "order"}, "test1")
 	}
 
-	for n := 0; n < 1000; n++ {
+	for n := 0; n < 100; n++ {
 		hrouterInsertion.Add(DynPattern{Topic: "payment"}, "test1")
 		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add"}, "test2")
 		hrouterInsertion.Add(DynPattern{Topic: "math", Cmd: "add", A: "1"}, "test3")

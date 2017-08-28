@@ -24,6 +24,45 @@ const (
 	InsertionIndexing = false
 )
 
+type (
+	// Option is a function on the options for hemera
+	Option  func(*Options) error
+	Options struct {
+		Timeout          time.Duration
+		IndexingStrategy bool
+	}
+	Handler interface{}
+	Hemera  struct {
+		Conn   *nats.Conn
+		Router *router.Router
+		Opts   Options
+	}
+	request struct {
+		ID          string `json:"id"`
+		RequestType string `json:"type"`
+	}
+	Trace struct {
+		TraceID      string `json:"traceId"`
+		ParentSpanID string `json:"parentSpanId"`
+		SpanID       string `json:"spanId"`
+		Timestamp    int64  `json:"timestamp"`
+		Service      string `json:"service"`
+		Method       string `json:"method"`
+		Duration     int64  `json:"duration"`
+	}
+	packet struct {
+		Pattern  interface{} `json:"pattern"`
+		Meta     Meta        `json:"meta"`
+		Delegate Delegate    `json:"delegate"`
+		Result   interface{} `json:"result"`
+		Trace    Trace       `json:"trace"`
+		Request  request     `json:"request"`
+		Error    *Error      `json:"error"`
+	}
+	Meta     map[string]interface{}
+	Delegate map[string]interface{}
+)
+
 func GetDefaultOptions() Options {
 	opts := Options{
 		Timeout:          RequestTimeout,
@@ -31,51 +70,6 @@ func GetDefaultOptions() Options {
 	}
 	return opts
 }
-
-// Option is a function on the options for hemera
-type Option func(*Options) error
-
-type Options struct {
-	Timeout          time.Duration
-	IndexingStrategy bool
-}
-
-type Handler interface{}
-
-// Hemera is the main struct
-type Hemera struct {
-	Conn   *nats.Conn
-	Router *router.Router
-	Opts   Options
-}
-
-type request struct {
-	ID          string `json:"id"`
-	RequestType string `json:"type"`
-}
-
-type Trace struct {
-	TraceID      string `json:"traceId"`
-	ParentSpanID string `json:"parentSpanId"`
-	SpanID       string `json:"spanId"`
-	Timestamp    int64  `json:"timestamp"`
-	Service      string `json:"service"`
-	Method       string `json:"method"`
-	Duration     int64  `json:"duration"`
-}
-
-type packet struct {
-	Pattern  interface{} `json:"pattern"`
-	Meta     Meta        `json:"meta"`
-	Delegate Delegate    `json:"delegate"`
-	Result   interface{} `json:"result"`
-	Trace    Trace       `json:"trace"`
-	Request  request     `json:"request"`
-	Error    *Error      `json:"error"`
-}
-
-type Meta map[string]interface{}
-type Delegate map[string]interface{}
 
 // New create a new Hemera struct
 func CreateHemera(conn *nats.Conn, options ...Option) (Hemera, error) {

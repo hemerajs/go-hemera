@@ -85,7 +85,7 @@ func TestAdd(t *testing.T) {
 
 	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
-	h.Add(pattern, func(req *RequestPattern, reply Reply, context Context) {
+	h.Add(pattern, func(req *RequestPattern, reply Reply, context *Context) {
 		reply.Send(Response{Result: req.A + req.B})
 	})
 
@@ -109,7 +109,7 @@ func TestActRequest(t *testing.T) {
 
 	pattern := MathPattern{Topic: "math", Cmd: "add"}
 
-	h.Add(pattern, func(req *RequestPattern, reply Reply, context Context) {
+	h.Add(pattern, func(req *RequestPattern, reply Reply, context *Context) {
 		reply.Send(Response{Result: req.A + req.B})
 	})
 
@@ -147,6 +147,6 @@ func TestNoDuplicatesAllowed(t *testing.T) {
 		reply.Send(Response{Result: req.A + req.B})
 	})
 
-	assert.Equal(errAdd.Message, "Pattern is already registered", "Should be not allowed to add duplicate patterns")
+	assert.Equal(errAdd.Error(), "add: duplicate pattern", "Should be not allowed to add duplicate patterns")
 
 }
