@@ -16,33 +16,29 @@ go get github.com/nats-io/gnatsd/server
 ### Example
 ```go
 
-// Define the pattern of your server method
 type MathPattern struct {
 	Topic string
-	Cmd string
+	Cmd   string
 }
 
-// Define the pattern of your RPC
 type RequestPattern struct {
-	Topic string
-	Cmd string
-	A int
-	B int
+	Topic    string
+	Cmd      string
+	A        int
+	B        int
+	Meta     server.Meta
+	Delegate server.Delegate
 }
 
-// Define the struct of your response
 type Response struct {
 	Result int
 }
 
-// Connect to NATS
 nc, _ := nats.Connect(nats.DefaultURL)
 
-// Create hemera struct with options
 hemera, _ := server.CreateHemera(nc, server.Timeout(2000), server.IndexingStrategy(DepthIndexing)...)
 
 pattern := MathPattern{Topic: "math", Cmd: "add"}
-
 hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
 	fmt.Printf("Request: %+v\n", req)
 	result := Response{Result: req.A + req.B}
@@ -58,7 +54,7 @@ requestPattern := RequestPattern{
 	Delegate: server.Delegate{ "Test": 2 },
 }
 
-res := &Response{}
+res := &Response{} // Pointer to struct
 hemera.Act(requestPattern, res)
 
 log.Printf("Response %v", res)
