@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
+	"github.com/hemerajs/go-hemera/router"
 	"github.com/mitchellh/mapstructure"
 	nats "github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
@@ -56,7 +57,7 @@ type Handler interface{}
 // Hemera is the main struct
 type Hemera struct {
 	Conn   *nats.Conn
-	Router Router
+	Router *router.Router
 	Opts   Options
 }
 
@@ -90,10 +91,10 @@ func CreateHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
 	opts := GetDefaultOptions()
 	for _, opt := range options {
 		if err := opt(&opts); err != nil {
-			return Hemera{Opts: opts, Router: NewRouter(opts.IndexingStrategy)}, err
+			return Hemera{Opts: opts, Router: router.NewRouter(opts.IndexingStrategy)}, err
 		}
 	}
-	return Hemera{Conn: conn, Opts: opts, Router: NewRouter(opts.IndexingStrategy)}, nil
+	return Hemera{Conn: conn, Opts: opts, Router: router.NewRouter(opts.IndexingStrategy)}, nil
 }
 
 // Timeout is an Option to set the timeout for a act request
@@ -236,8 +237,6 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 		delegateField = field.Value()
 	}
 
-	pattern := CleanPattern(p)
-
 	argTypes, numArgs := ArgInfo(cb)
 
 	if numArgs < 2 {
@@ -257,7 +256,7 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 	}
 
 	request := packet{
-		Pattern:  pattern,
+		Pattern:  p,
 		Meta:     metaField,
 		Delegate: delegateField,
 		Trace: trace{
@@ -342,4 +341,22 @@ func (h *Hemera) Act(p interface{}, cb Handler) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Dissect the cb Handler's signature
+func ArgInfo(cb Handler) ([]reflect.Type, int) {
+	cbType := reflect.TypeOf(cb)
+
+	if cbType.Kind() != reflect.Func {
+		panic("hemera: Handler needs to be a func")
+	}
+
+	numArgs := cbType.NumIn()
+	argTypes := []reflect.Type{}
+
+	for i := 0; i < numArgs; i++ {
+		argTypes = append(argTypes, cbType.In(i))
+	}
+
+	return argTypes, numArgs
 }

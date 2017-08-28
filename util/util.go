@@ -1,4 +1,4 @@
-package hemera
+package util
 
 import (
 	"reflect"
@@ -33,22 +33,4 @@ func CleanPattern(p interface{}) interface{} {
 	}
 
 	return pattern
-}
-
-// Dissect the cb Handler's signature
-func ArgInfo(cb Handler) ([]reflect.Type, int) {
-	cbType := reflect.TypeOf(cb)
-
-	if cbType.Kind() != reflect.Func {
-		panic("hemera: Handler needs to be a func")
-	}
-
-	numArgs := cbType.NumIn()
-	argTypes := []reflect.Type{}
-
-	for i := 0; i < numArgs; i++ {
-		argTypes = append(argTypes, cbType.In(i))
-	}
-
-	return argTypes, numArgs
 }

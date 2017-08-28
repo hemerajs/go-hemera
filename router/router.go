@@ -1,8 +1,10 @@
-package hemera
+package router
 
 import (
 	"math"
+	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/sets/hashset"
@@ -34,10 +36,10 @@ type Router struct {
 }
 
 //NewRouter creaet a new router
-func NewRouter(IsDeep bool) Router {
+func NewRouter(IsDeep bool) *Router {
 	hm := hashmap.New()
 
-	return Router{Map: hm, IsDeep: IsDeep}
+	return &Router{Map: hm, IsDeep: IsDeep}
 }
 
 // Add Insert a new pattern
@@ -232,11 +234,31 @@ func (r *Router) convertToPatternSet(p interface{}) *PatternSet {
 	ps.Pattern = p
 	ps.Weight = 0
 
-	// @TODO: only primitive values
 	for _, field := range fields {
-		if !field.IsZero() {
-			ps.Fields[field.Name()] = field.Value()
-			ps.Weight++
+		if !strings.HasSuffix(field.Name(), "_") && !field.IsZero() {
+			fieldKind := field.Kind()
+
+			switch fieldKind {
+			case reflect.Int8:
+				fallthrough
+			case reflect.Int16:
+				fallthrough
+			case reflect.Int32:
+				fallthrough
+			case reflect.Int64:
+				fallthrough
+			case reflect.Int:
+				fallthrough
+			case reflect.String:
+				fallthrough
+			case reflect.Bool:
+				fallthrough
+			case reflect.Float32:
+				fallthrough
+			case reflect.Float64:
+				ps.Fields[field.Name()] = field.Value()
+				ps.Weight++
+			}
 		}
 	}
 

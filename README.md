@@ -10,6 +10,7 @@
 
 ```
 go get ./..
+go get github.com/nats-io/gnatsd/server
 ```
 
 ### Example
