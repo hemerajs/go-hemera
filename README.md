@@ -18,21 +18,21 @@ go get github.com/nats-io/gnatsd/server
 
 // Define the pattern of your server method
 type MathPattern struct {
-	Topic string `json:"topic"`
-	Cmd string `json:"cmd"`
+	Topic string
+	Cmd string
 }
 
 // Define the pattern of your RPC
 type RequestPattern struct {
-	Topic string `json:"topic" mapstructure:"topic"`
-	Cmd string `json:"cmd" mapstructure:"cmd"`
-	A int `json:"a" mapstructure:"a"`
-	B int `json:"b" mapstructure:"b"`
+	Topic string
+	Cmd string
+	A int
+	B int
 }
 
 // Define the struct of your response
 type Response struct {
-	Result int `json:"result"`
+	Result int
 }
 
 // Connect to NATS
@@ -41,28 +41,27 @@ nc, _ := nats.Connect(nats.DefaultURL)
 // Create hemera struct with options
 hemera, _ := server.CreateHemera(nc, server.Timeout(2000), server.IndexingStrategy(DepthIndexing)...)
 
-// Define your server method
-pattern := MathPattern{
-	Topic: "math",
-	Cmd: "add",
-}
+pattern := MathPattern{Topic: "math", Cmd: "add"}
 
-hemera.Add(pattern, func(req *RequestPattern, reply server.Reply) {
-  result := Response{Result: req.A + req.B}
-  reply.Send(result)
+hemera.Add(pattern, func(req *RequestPattern, reply server.Reply, context server.Context) {
+	fmt.Printf("Request: %+v\n", req)
+	result := Response{Result: req.A + req.B}
+	reply.Send(result)
 })
 
-// Call your server method
 requestPattern := RequestPattern{
 	Topic: "math",
 	Cmd: "add",
 	A: 1,
 	B: 2,
+	Meta: server.Meta{ "Test": 1 },
+	Delegate: server.Delegate{ "Test": 2 },
 }
 
-hemera.Act(requestPattern, func(resp *Response, err server.Error) {
-  fmt.Printf("Response: %+v\n", resp)
-})
+res := &Response{}
+hemera.Act(requestPattern, res)
+
+log.Printf("Response %v", res)
 ```
 
 ## Pattern matching

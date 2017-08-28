@@ -12,27 +12,21 @@ import (
 )
 
 type MathPattern struct {
-	Topic string `json:"topic"`
-	Cmd string `json:"cmd"`
-}
-
-type Delegate struct {
-		Query string `json:"query"`
-}
-
-type Meta struct {
-		Token string `json:"token"`
+	Topic string
+	Cmd   string
 }
 
 type RequestPattern struct {
-	Topic string `json:"topic" mapstructure:"topic"`
-	Cmd string `json:"cmd" mapstructure:"cmd"`
-	A int `json:"a" mapstructure:"a"`
-	B int `json:"b" mapstructure:"b"`
+	Topic    string
+	Cmd      string
+	A        int
+	B        int
+	Meta     server.Meta
+	Delegate server.Delegate
 }
 
 type Response struct {
-	Result int `json:"result"`
+	Result int
 }
 
 func main() {
@@ -52,7 +46,15 @@ func main() {
 		reply.Send(result)
 	})
 
-	requestPattern := RequestPattern{Topic: "math", Cmd: "add", A: 1, B: 2}
+	requestPattern := RequestPattern{
+		Topic:    "math",
+		Cmd:      "add",
+		A:        1,
+		B:        2,
+		Meta:     server.Meta{"Test": 1},
+		Delegate: server.Delegate{"Test": 2},
+	}
+
 	res := &Response{}
 	hemera.Act(requestPattern, res)
 

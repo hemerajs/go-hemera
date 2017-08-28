@@ -1,8 +1,8 @@
 package hemera
 
 type Context struct {
-	Meta     interface{}
-	Delegate interface{}
-	Trace    trace
+	Meta     Meta
+	Delegate Delegate
+	Trace    Trace
 	Error    *Error
 }

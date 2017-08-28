@@ -1,13 +1,14 @@
 package hemera
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"time"
 
 	"github.com/fatih/structs"
 	"github.com/hemerajs/go-hemera/router"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/mitchellh/mapstructure"
 	nats "github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
@@ -65,7 +66,7 @@ type request struct {
 	RequestType string `json:"type"`
 }
 
-type trace struct {
+type Trace struct {
 	TraceID      string `json:"traceId"`
 	ParentSpanID string `json:"parentSpanId"`
 	SpanID       string `json:"spanId"`
@@ -77,13 +78,16 @@ type trace struct {
 
 type packet struct {
 	Pattern  interface{} `json:"pattern"`
-	Meta     interface{} `json:"meta"`
-	Delegate interface{} `json:"delegate"`
+	Meta     Meta        `json:"meta"`
+	Delegate Delegate    `json:"delegate"`
 	Result   interface{} `json:"result"`
-	Trace    trace       `json:"trace"`
+	Trace    Trace       `json:"trace"`
 	Request  request     `json:"request"`
 	Error    *Error      `json:"error"`
 }
+
+type Meta map[string]interface{}
+type Delegate map[string]interface{}
 
 // New create a new Hemera struct
 func CreateHemera(conn *nats.Conn, options ...Option) (Hemera, error) {
@@ -157,6 +161,7 @@ func (h *Hemera) Add(p interface{}, cb Handler) (*nats.Subscription, *Error) {
 
 func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Type, numArgs int) {
 	var oPtr reflect.Value
+
 	if mContainer.Kind() != reflect.Ptr {
 		oPtr = reflect.New(mContainer)
 	} else {
@@ -168,7 +173,7 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 	// decoding hemera packet
 	jsoniter.Unmarshal(m.Data, &pack)
 
-	context := Context{Meta: pack.Meta, Delegate: pack.Delegate, Trace: pack.Trace}
+	context := Context{Trace: pack.Trace, Meta: pack.Meta, Delegate: pack.Delegate}
 
 	oContextPtr := reflect.ValueOf(context)
 
@@ -236,21 +241,21 @@ func (h *Hemera) Act(p interface{}, out interface{}) *Context {
 		return context
 	}
 
-	var metaField interface{}
-	if field, ok := s.FieldOk("Meta_"); ok {
-		metaField = field.Value()
+	var metaField Meta
+	if field, ok := s.FieldOk("Meta"); ok {
+		metaField = field.Value().(Meta)
 	}
 
-	var delegateField interface{}
-	if field, ok := s.FieldOk("Delegate_"); ok {
-		delegateField = field.Value()
+	var delegateField Delegate
+	if field, ok := s.FieldOk("Delegate"); ok {
+		delegateField = field.Value().(Delegate)
 	}
 
 	request := packet{
-		Pattern:  p,
+		Pattern:  CleanPattern(s),
 		Meta:     metaField,
 		Delegate: delegateField,
-		Trace: trace{
+		Trace: Trace{
 			TraceID: nuid.Next(),
 		},
 		Request: request{
@@ -258,6 +263,8 @@ func (h *Hemera) Act(p interface{}, out interface{}) *Context {
 			RequestType: RequestType,
 		},
 	}
+
+	fmt.Println(request.Pattern)
 
 	data, _ := jsoniter.Marshal(&request)
 	m, err := h.Conn.Request(topic, data, h.Opts.Timeout*time.Millisecond)
@@ -297,9 +304,9 @@ func (h *Hemera) Act(p interface{}, out interface{}) *Context {
 		}
 	}
 
+	context.Trace = pack.Trace
 	context.Meta = pack.Meta
 	context.Delegate = pack.Delegate
-	context.Trace = pack.Trace
 
 	return context
 }
@@ -320,4 +327,22 @@ func ArgInfo(cb Handler) ([]reflect.Type, int) {
 	}
 
 	return argTypes, numArgs
+}
+
+func CleanPattern(s *structs.Struct) interface{} {
+	var pattern = make(map[string]interface{})
+
+	for _, f := range s.Fields() {
+		if f.IsExported() {
+			switch f.Value().(type) {
+			case Meta:
+			case Delegate:
+			default:
+				pattern[f.Name()] = f.Value()
+			}
+		}
+
+	}
+
+	return pattern
 }
