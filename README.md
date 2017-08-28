@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-A <a href="http://nodejs.org/">Node.js</a> microservices toolkit for the <a href="https://nats.io">NATS messaging system</a>
+A <a href="https://golang.org/">Go</a> microservices toolkit for the <a href="https://nats.io">NATS messaging system</a>
 </p>
 
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](http://opensource.org/licenses/MIT)
