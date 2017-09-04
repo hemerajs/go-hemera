@@ -6,17 +6,17 @@ import (
 )
 
 type Reply struct {
-	Hemera  *Hemera
-	Pattern interface{}
-	Context *Context
-	Reply   string
+	hemera  *Hemera
+	pattern interface{}
+	context *Context
+	reply   string
 }
 
 func (r *Reply) Send(payload interface{}) {
 	response := packet{
-		Pattern: r.Pattern,
-		Meta:    r.Context.Meta,
-		Trace:   r.Context.Trace,
+		Pattern: r.pattern,
+		Meta:    r.context.Meta,
+		Trace:   r.context.Trace,
 		Request: request{
 			ID:          nuid.Next(),
 			RequestType: RequestType,
@@ -32,5 +32,5 @@ func (r *Reply) Send(payload interface{}) {
 	}
 
 	data, _ := jsoniter.Marshal(&response)
-	r.Hemera.Conn.Publish(r.Reply, data)
+	r.hemera.Conn.Publish(r.reply, data)
 }

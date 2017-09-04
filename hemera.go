@@ -179,10 +179,10 @@ func (h *Hemera) callAddAction(topic string, m *nats.Msg, mContainer reflect.Typ
 	if p != nil {
 		// Get "Value" of the reply callback for the reflection Call
 		reply := Reply{
-			Context: context,
-			Pattern: p.Pattern,
-			Reply:   m.Reply,
-			Hemera:  h,
+			context: context,
+			pattern: p.Pattern,
+			reply:   m.Reply,
+			hemera:  h,
 		}
 
 		oReplyPtr := reflect.ValueOf(reply)
