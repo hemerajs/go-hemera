@@ -3,11 +3,13 @@
 </p>
 
 <p align="center">
-A <a href="https://golang.org/">Go</a> microservices toolkit for the <a href="https://nats.io">NATS messaging system</a>
+<a href="http://travis-ci.org/hemerajs/go-hemera"><img src="https://camo.githubusercontent.com/e63eeeaa28adaf0d6aa7abd5ca9d2dd1f2f7293d/68747470733a2f2f7472617669732d63692e6f72672f68656d6572616a732f676f2d68656d6572612e7376673f6272616e63683d6d6173746572" alt="Build Status" data-canonical-src="https://travis-ci.org/hemerajs/go-hemera.svg?branch=master" style="max-width:100%;"></a>
+<a href="http://opensource.org/licenses/MIT"><img src="https://camo.githubusercontent.com/311762166ef25238116d3cadd22fcb6091edab98/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f4c6963656e73652d4d49542d626c75652e737667" alt="License MIT" data-canonical-src="https://img.shields.io/badge/License-MIT-blue.svg" style="max-width:100%;"></a>
 </p>
 
-[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](http://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/hemerajs/go-hemera.svg?branch=master)](http://travis-ci.org/hemerajs/go-hemera)
+<p align="center">
+A <a href="https://golang.org/">Go</a> microservices toolkit for the <a href="https://nats.io">NATS messaging system</a>
+</p>
 
 **Status:** Experimental
 
