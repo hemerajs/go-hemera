@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://github.com/StarpTech/hemera/raw/master/media/hemera-logo.png" alt="Hemera" style="max-width:100%;">
+<img src="https://hemerajs.github.io/hemera/img/hemera.png" alt="Hemera" style="max-width:100%;">
 </p>
 
 <p align="center">
